@@ -1,7 +1,7 @@
 # powerpicks
 
 ## Stage 1
- - College Football (SEC, ACC, BIG 10, & PAC 12)
+ - College Football (SEC, ACC, BIG 10, BIG XII, & PAC 12)
  - MLB
 
 ## Stage 2
