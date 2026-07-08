@@ -40,6 +40,8 @@ function mapLeague(
   league: LeagueWithRelations,
   options?: { role?: "commissioner" | "member"; isCommissioner?: boolean },
 ): League {
+  const isCommissioner = options?.isCommissioner ?? options?.role === "commissioner";
+
   return {
     id: league.id,
     name: league.name,
@@ -49,13 +51,13 @@ function mapLeague(
     classificationId: league.classificationId,
     classificationName: league.classification.name,
     classificationSlug: league.classification.slug,
-    inviteCode: league.inviteCode,
+    ...(isCommissioner ? { inviteCode: league.inviteCode } : {}),
     isPublic: league.isPublic,
     maxMembers: league.maxMembers,
     memberCount: league.memberCount,
     tiePolicy: league.tiePolicy,
     status: league.status,
-    isCommissioner: options?.isCommissioner ?? options?.role === "commissioner",
+    isCommissioner,
     role: options?.role,
     season: league.currentSeason
       ? {
@@ -81,14 +83,39 @@ async function findUserByClerkId(clerkId: string) {
   });
 }
 
-async function countActiveCreatedLeagues(userId: string): Promise<number> {
-  return prisma.league.count({
+async function countActiveCreatedLeagues(
+  userId: string,
+  tx: Pick<typeof prisma, "league"> = prisma,
+): Promise<number> {
+  return tx.league.count({
     where: {
       commissionerId: userId,
       deletedAt: null,
       status: { not: "archived" },
     },
   });
+}
+
+type LockedLeagueRow = {
+  id: string;
+  member_count: number;
+  max_members: number;
+  current_season_id: string | null;
+  status: "setup" | "active" | "archived";
+};
+
+async function lockLeagueForUpdate(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  leagueId: string,
+): Promise<LockedLeagueRow | null> {
+  const rows = await tx.$queryRaw<LockedLeagueRow[]>`
+    SELECT id, member_count, max_members, current_season_id, status
+    FROM leagues
+    WHERE id = ${leagueId}::uuid AND deleted_at IS NULL
+    FOR UPDATE
+  `;
+
+  return rows[0] ?? null;
 }
 
 async function generateUniqueInviteCode(): Promise<string> {
@@ -173,6 +200,18 @@ export async function createLeague(
       : null;
 
   const league = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id}))`;
+
+    const lockedCount = await countActiveCreatedLeagues(user.id, tx);
+    if (lockedCount >= FREE_TIER_MAX_LEAGUES) {
+      throw new LeagueServiceError(
+        "Free accounts can create up to 2 active leagues. Upgrade to Pro for unlimited leagues.",
+        403,
+        "league_limit_reached",
+        { limit: FREE_TIER_MAX_LEAGUES },
+      );
+    }
+
     const created = await tx.league.create({
       data: {
         name: input.name,
@@ -355,22 +394,6 @@ export async function joinLeague(
     throw new LeagueServiceError("League season not configured", 500);
   }
 
-  const existingMembership = await prisma.leagueMember.findFirst({
-    where: {
-      leagueId: league.id,
-      userId: user.id,
-      seasonId: league.currentSeasonId,
-    },
-  });
-
-  if (existingMembership) {
-    throw new LeagueServiceError("You are already a member of this league", 409);
-  }
-
-  if (league.memberCount >= league.maxMembers) {
-    throw new LeagueServiceError("This league is full", 409, "league_full");
-  }
-
   if (!league.isPublic) {
     if (!password) {
       throw new LeagueServiceError("Password required", 401, "password_required");
@@ -385,11 +408,40 @@ export async function joinLeague(
   }
 
   const updated = await prisma.$transaction(async (tx) => {
+    const locked = await lockLeagueForUpdate(tx, league.id);
+    if (!locked) {
+      throw new LeagueServiceError("Invite not found", 404);
+    }
+
+    if (locked.status === "archived") {
+      throw new LeagueServiceError("This league has been archived", 410);
+    }
+
+    if (!locked.current_season_id) {
+      throw new LeagueServiceError("League season not configured", 500);
+    }
+
+    if (locked.member_count >= locked.max_members) {
+      throw new LeagueServiceError("This league is full", 409, "league_full");
+    }
+
+    const existingMembership = await tx.leagueMember.findFirst({
+      where: {
+        leagueId: league.id,
+        userId: user.id,
+        seasonId: locked.current_season_id,
+      },
+    });
+
+    if (existingMembership) {
+      throw new LeagueServiceError("You are already a member of this league", 409);
+    }
+
     await tx.leagueMember.create({
       data: {
         leagueId: league.id,
         userId: user.id,
-        seasonId: league.currentSeasonId!,
+        seasonId: locked.current_season_id,
         role: "member",
       },
     });

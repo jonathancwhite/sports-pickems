@@ -85,7 +85,7 @@ export const leagueSchema = z.object({
   classificationId: z.string().uuid(),
   classificationName: z.string(),
   classificationSlug: z.string(),
-  inviteCode: z.string(),
+  inviteCode: z.string().optional(),
   isPublic: z.boolean(),
   maxMembers: z.number().int(),
   memberCount: z.number().int(),

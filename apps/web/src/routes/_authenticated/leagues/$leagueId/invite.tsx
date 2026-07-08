@@ -49,6 +49,21 @@ function InviteCommissionerPage() {
     );
   }
 
+  if (!league.inviteCode) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-destructive">Invite code is unavailable.</p>
+        <Link
+          to="/leagues/$leagueId"
+          params={{ leagueId }}
+          className="text-sm text-primary hover:underline"
+        >
+          Go to league
+        </Link>
+      </div>
+    );
+  }
+
   const inviteUrl = getInviteUrl(league.inviteCode);
 
   async function copyInviteLink() {
