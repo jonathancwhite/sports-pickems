@@ -1,19 +1,33 @@
 {
-	"name": "powerpicks",
-	"version": "1.0.0",
-	"description": "",
-	"scripts": {
-		"start": "concurrently \"pnpm run server\" \"pnpm run client\"",
-		"server": "cd server && pnpm start",
-		"client": "cd client && pnpm start",
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"install-back": "cd server && pnpm i",
-		"install-front": "cd client && pnpm i"
-	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"devDependencies": {
-		"concurrently": "^8.2.2"
-	}
+  "name": "callsheet",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "db:generate": "pnpm --filter @callsheet/db db:generate",
+    "db:migrate": "pnpm --filter @callsheet/db db:migrate",
+    "db:seed": "pnpm --filter @callsheet/db db:seed",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.21.0"
+  },
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
 }
