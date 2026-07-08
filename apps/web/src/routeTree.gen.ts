@@ -18,6 +18,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedLeaguesIndexRouteImport } from './routes/_authenticated/leagues/index'
 import { Route as PublicInviteCodeRouteImport } from './routes/_public/invite.$code'
+import { Route as AuthenticatedLeaguesNewRouteImport } from './routes/_authenticated/leagues/new'
 import { Route as AuthenticatedLeaguesMyRouteImport } from './routes/_authenticated/leagues/my'
 
 const PublicRoute = PublicRouteImport.update({
@@ -64,6 +65,11 @@ const PublicInviteCodeRoute = PublicInviteCodeRouteImport.update({
   path: '/invite/$code',
   getParentRoute: () => PublicRoute,
 } as any)
+const AuthenticatedLeaguesNewRoute = AuthenticatedLeaguesNewRouteImport.update({
+  id: '/leagues/new',
+  path: '/leagues/new',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedLeaguesMyRoute = AuthenticatedLeaguesMyRouteImport.update({
   id: '/leagues/my',
   path: '/leagues/my',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof PublicSignInRoute
   '/sign-up': typeof PublicSignUpRoute
   '/leagues/my': typeof AuthenticatedLeaguesMyRoute
+  '/leagues/new': typeof AuthenticatedLeaguesNewRoute
   '/invite/$code': typeof PublicInviteCodeRoute
   '/leagues/': typeof AuthenticatedLeaguesIndexRoute
 }
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof PublicSignInRoute
   '/sign-up': typeof PublicSignUpRoute
   '/leagues/my': typeof AuthenticatedLeaguesMyRoute
+  '/leagues/new': typeof AuthenticatedLeaguesNewRoute
   '/invite/$code': typeof PublicInviteCodeRoute
   '/leagues': typeof AuthenticatedLeaguesIndexRoute
 }
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/_public/sign-up': typeof PublicSignUpRoute
   '/_public/': typeof PublicIndexRoute
   '/_authenticated/leagues/my': typeof AuthenticatedLeaguesMyRoute
+  '/_authenticated/leagues/new': typeof AuthenticatedLeaguesNewRoute
   '/_public/invite/$code': typeof PublicInviteCodeRoute
   '/_authenticated/leagues/': typeof AuthenticatedLeaguesIndexRoute
 }
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/leagues/my'
+    | '/leagues/new'
     | '/invite/$code'
     | '/leagues/'
   fileRoutesByTo: FileRoutesByTo
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/leagues/my'
+    | '/leagues/new'
     | '/invite/$code'
     | '/leagues'
   id:
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/_public/sign-up'
     | '/_public/'
     | '/_authenticated/leagues/my'
+    | '/_authenticated/leagues/new'
     | '/_public/invite/$code'
     | '/_authenticated/leagues/'
   fileRoutesById: FileRoutesById
@@ -208,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicInviteCodeRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_authenticated/leagues/new': {
+      id: '/_authenticated/leagues/new'
+      path: '/leagues/new'
+      fullPath: '/leagues/new'
+      preLoaderRoute: typeof AuthenticatedLeaguesNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/leagues/my': {
       id: '/_authenticated/leagues/my'
       path: '/leagues/my'
@@ -222,6 +241,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedLeaguesMyRoute: typeof AuthenticatedLeaguesMyRoute
+  AuthenticatedLeaguesNewRoute: typeof AuthenticatedLeaguesNewRoute
   AuthenticatedLeaguesIndexRoute: typeof AuthenticatedLeaguesIndexRoute
 }
 
@@ -229,6 +249,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedLeaguesMyRoute: AuthenticatedLeaguesMyRoute,
+  AuthenticatedLeaguesNewRoute: AuthenticatedLeaguesNewRoute,
   AuthenticatedLeaguesIndexRoute: AuthenticatedLeaguesIndexRoute,
 }
 

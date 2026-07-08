@@ -40,13 +40,13 @@ function DashboardPage() {
             description="Create a new league or browse public leagues to get started."
             action={
               <div className="flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="/leagues/new"
+                <Link
+                  to="/leagues/new"
                   className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
                   <Plus className="size-4" aria-hidden />
                   Create league
-                </a>
+                </Link>
                 <Link
                   to="/leagues"
                   className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
