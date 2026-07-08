@@ -205,7 +205,7 @@ model User {
 model UserPreference {
   userId    String   @id @map("user_id") @db.Uuid
   theme     Theme    @default(system)
-  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
