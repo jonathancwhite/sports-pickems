@@ -111,6 +111,7 @@ export async function getPicks(
       userId: pick.userId,
       username: pick.user.username,
       lockedAt: pick.lockedAt?.toISOString() ?? null,
+      isCorrect: pick.isCorrect,
     })),
   };
 }

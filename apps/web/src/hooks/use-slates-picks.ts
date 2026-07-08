@@ -114,6 +114,24 @@ export function usePickSummary(leagueId: string, week: number, enabled = true) {
   });
 }
 
+export function useLeaderboard(
+  leagueId: string,
+  week?: number,
+  options?: { enabled?: boolean },
+) {
+  const api = useApiClient();
+  const isWeekly = week !== undefined;
+
+  return useQuery({
+    queryKey: ["leaderboard", leagueId, week ?? "season"],
+    queryFn: () =>
+      isWeekly
+        ? api.getWeeklyLeaderboard(leagueId, week)
+        : api.getSeasonLeaderboard(leagueId),
+    enabled: (options?.enabled ?? true) && Boolean(leagueId) && (isWeekly ? week > 0 : true),
+  });
+}
+
 export const WEEKS = Array.from({ length: 15 }, (_, index) => index + 1);
 
 export function getCurrentWeekFromGames(games: { week: number; startTime: string }[]): number {

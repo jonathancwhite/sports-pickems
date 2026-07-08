@@ -11,6 +11,7 @@ import {
   type MappedGame,
 } from "@callsheet/shared";
 import { lockSlatesForGame } from "./slates.js";
+import { scorePicksForGame } from "./scoring.js";
 
 const FBS_CLASSIFICATION_SLUG = "ncaa-fbs";
 const COMPLETED_GAME_RETENTION_DAYS = 7;
@@ -200,6 +201,10 @@ async function upsertMappedGame(
 
   if (mapped.status === "in_progress" || mapped.status === "final") {
     await lockSlatesForGame(game.id);
+  }
+
+  if (mapped.status === "final") {
+    await scorePicksForGame(game.id);
   }
 
   return existing ? "updated" : "created";

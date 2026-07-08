@@ -20,6 +20,7 @@ export const pickSchema = z.object({
   userId: z.string().uuid(),
   username: z.string(),
   lockedAt: z.string().datetime().nullable(),
+  isCorrect: z.boolean().nullable().optional(),
 });
 
 export type Pick = z.infer<typeof pickSchema>;

@@ -1,14 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
-  Calendar,
   Crown,
   LogOut,
-  Settings,
   Trash2,
   Trophy,
   Users,
 } from "lucide-react";
 import { GameCard, SlateEmptyState } from "@/components/game-card";
+import { LeagueNav } from "@/components/league-nav";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { WeekSelector } from "@/components/week-selector";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -19,6 +18,7 @@ import {
   useWaitlist,
 } from "@/hooks/use-leagues";
 import {
+  useLeaderboard,
   usePickSummary,
   useSelectedWeek,
   useSlate,
@@ -48,6 +48,14 @@ function LeagueDetailPage() {
     true,
   );
   const { data: pickSummary } = usePickSummary(leagueId, selectedWeek, Boolean(league));
+  const lastCompletedWeek = slates?.lastCompletedWeek;
+  const { data: recentWeekLeaderboard } = useLeaderboard(
+    leagueId,
+    lastCompletedWeek ?? undefined,
+    { enabled: lastCompletedWeek !== null && lastCompletedWeek !== undefined },
+  );
+  const weekWinners =
+    recentWeekLeaderboard?.entries.filter((entry) => entry.isWeekWinner) ?? [];
 
   const leaveLeague = useLeaveLeague();
   const removeMember = useRemoveMember();
@@ -160,23 +168,18 @@ function LeagueDetailPage() {
         </div>
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto border-b pb-px">
-        <NavTab to="/leagues/$leagueId" params={{ leagueId }} active icon={Trophy}>
-          Overview
-        </NavTab>
-        <NavTab to="/leagues/$leagueId/picks" params={{ leagueId }} icon={Calendar}>
-          Picks
-        </NavTab>
-        {league.isCommissioner && (
-          <NavTab to="/leagues/$leagueId/schedule" params={{ leagueId }} icon={Calendar}>
-            Schedule
-          </NavTab>
-        )}
-        <span className="inline-flex items-center gap-2 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground opacity-50">
-          <Settings className="size-4" aria-hidden />
-          Settings
-        </span>
-      </nav>
+      <LeagueNav
+        leagueId={leagueId}
+        isCommissioner={league.isCommissioner}
+        active="overview"
+      />
+
+      {lastCompletedWeek && weekWinners.length > 0 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+          <span className="font-medium">Week {lastCompletedWeek} winner: </span>
+          {weekWinners.map((winner) => winner.username).join(", ")}
+        </div>
+      )}
 
       {seasonActive && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
@@ -210,7 +213,7 @@ function LeagueDetailPage() {
           <ul className="space-y-3">
             {slate.games.map((game) => (
               <li key={game.id}>
-                <GameCard game={game} showPickStatus disabled />
+                <GameCard game={game} showPickStatus showResultIcons disabled />
               </li>
             ))}
           </ul>
@@ -318,36 +321,6 @@ function LeagueDetailPage() {
         />
       </div>
     </div>
-  );
-}
-
-function NavTab({
-  to,
-  params,
-  active,
-  icon: Icon,
-  children,
-}: {
-  to: string;
-  params: { leagueId: string };
-  active?: boolean;
-  icon: typeof Trophy;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      to={to}
-      params={params}
-      className={cn(
-        "inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap",
-        active
-          ? "border-primary text-primary"
-          : "border-transparent text-muted-foreground hover:text-foreground",
-      )}
-    >
-      <Icon className="size-4" aria-hidden />
-      {children}
-    </Link>
   );
 }
 

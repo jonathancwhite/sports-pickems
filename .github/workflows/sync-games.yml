@@ -37,6 +37,9 @@ jobs:
             exit 1
           fi
 
+          scored=$(echo "$body" | jq -r '.scored // 0')
+          echo "Picks scored: $scored"
+
           error_count=$(echo "$body" | jq -r '.errors | length // 0')
           if [ "$error_count" -gt 0 ]; then
             echo "Sync completed with $error_count error(s)"

@@ -16,17 +16,17 @@
 **So that** leaderboards stay current
 
 **Acceptance criteria:**
-- [ ] `score-picks` Absurd task (or cron endpoint `POST /api/cron/score-picks`)
-- [ ] Finds games with `status: final` and unscored picks
-- [ ] Sets `picks.is_correct` based on:
+- [x] `score-picks` Absurd task (or cron endpoint `POST /api/cron/score-picks`)
+- [x] Finds games with `status: final` and unscored picks
+- [x] Sets `picks.is_correct` based on:
   - `picked_team` matches `games.winner` → `true`
   - `picked_team` does not match → `false`
   - `games.winner` is `tie` → apply league `tie_policy`:
     - `no_points`: `is_correct = false`
     - `count_as_correct`: `is_correct = true`
     - `half_point`: `is_correct = true` (score computed as 0.5 in leaderboard query)
-- [ ] Idempotent — re-scoring doesn't duplicate
-- [ ] Triggered by game sync (Sprint 06) after status update
+- [x] Idempotent — re-scoring doesn't duplicate
+- [x] Triggered by game sync (Sprint 06) after status update
 
 ---
 
@@ -37,13 +37,13 @@
 **So that** I know who won this week
 
 **Acceptance criteria:**
-- [ ] `GET /api/leagues/:id/leaderboard/:week` — member only
-- [ ] Returns ranked list: `{ rank, userId, username, correct, total, points }`
-- [ ] `correct` = count of `is_correct: true` picks for that week
-- [ ] `total` = count of picks made (not total games — missed picks excluded)
-- [ ] `points` = correct count (or with half_point logic)
-- [ ] Ties in rank handled (same rank, skip next)
-- [ ] Only includes members who were in the league that week
+- [x] `GET /api/leagues/:id/leaderboard/:week` — member only
+- [x] Returns ranked list: `{ rank, userId, username, correct, total, points }`
+- [x] `correct` = count of `is_correct: true` picks for that week
+- [x] `total` = count of picks made (not total games — missed picks excluded)
+- [x] `points` = correct count (or with half_point logic)
+- [x] Ties in rank handled (same rank, skip next)
+- [x] Only includes members who were in the league that week
 
 ---
 
@@ -54,10 +54,10 @@
 **So that** I know who's winning overall
 
 **Acceptance criteria:**
-- [ ] `GET /api/leagues/:id/leaderboard` — member only
-- [ ] Cumulative across all weeks in current season
-- [ ] Same shape as weekly: `{ rank, userId, username, correct, total, points }`
-- [ ] Season winner = rank 1 at season end
+- [x] `GET /api/leagues/:id/leaderboard` — member only
+- [x] Cumulative across all weeks in current season
+- [x] Same shape as weekly: `{ rank, userId, username, correct, total, points }`
+- [x] Season winner = rank 1 at season end
 
 ---
 
@@ -68,13 +68,13 @@
 **So that** I can see standings
 
 **Acceptance criteria:**
-- [ ] Leaderboard tab on `/leagues/:id`
-- [ ] Toggle: Weekly / Season
-- [ ] Week selector for weekly view
-- [ ] Table: rank, username, correct/total, points
-- [ ] Current user row highlighted
-- [ ] Trophy or medal icon for top 3
-- [ ] Empty state: "No picks scored yet"
+- [x] Leaderboard tab on `/leagues/:id`
+- [x] Toggle: Weekly / Season
+- [x] Week selector for weekly view
+- [x] Table: rank, username, correct/total, points
+- [x] Current user row highlighted
+- [x] Trophy or medal icon for top 3
+- [x] Empty state: "No picks scored yet"
 
 ---
 
@@ -85,11 +85,11 @@
 **So that** I can see how I did
 
 **Acceptance criteria:**
-- [ ] On picks page and league page: final games show score (e.g., "Georgia 31 – 17 Alabama")
-- [ ] Correct picks: green check icon
-- [ ] Incorrect picks: red X icon
-- [ ] Unpicked games: grey dash (no penalty indicator)
-- [ ] In-progress games: live score if available from sync
+- [x] On picks page and league page: final games show score (e.g., "Georgia 31 – 17 Alabama")
+- [x] Correct picks: green check icon
+- [x] Incorrect picks: red X icon
+- [x] Unpicked games: grey dash (no penalty indicator)
+- [x] In-progress games: live score if available from sync
 
 ---
 
@@ -100,9 +100,9 @@
 **So that** we can celebrate weekly champions
 
 **Acceptance criteria:**
-- [ ] Weekly leaderboard: rank 1 user gets "Week Winner" badge
-- [ ] Shown on league overview for the most recently completed week
-- [ ] If tie for first: all tied users get badge
+- [x] Weekly leaderboard: rank 1 user gets "Week Winner" badge
+- [x] Shown on league overview for the most recently completed week
+- [x] If tie for first: all tied users get badge
 
 ---
 
@@ -118,9 +118,9 @@
 
 ## Sprint definition of done
 
-- [ ] Picks scored correctly when games go final
-- [ ] Tie policy applied per league settings
-- [ ] Weekly leaderboard displays with correct ranks
-- [ ] Season leaderboard displays cumulative standings
-- [ ] Game results and pick correctness shown in UI
-- [ ] All stories checked off
+- [x] Picks scored correctly when games go final
+- [x] Tie policy applied per league settings
+- [x] Weekly leaderboard displays with correct ranks
+- [x] Season leaderboard displays cumulative standings
+- [x] Game results and pick correctness shown in UI
+- [x] All stories checked off

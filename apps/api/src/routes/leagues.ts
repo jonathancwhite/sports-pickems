@@ -26,6 +26,10 @@ import {
   submitPicks,
 } from "../services/picks.js";
 import {
+  getSeasonLeaderboard,
+  getWeeklyLeaderboard,
+} from "../services/leaderboards.js";
+import {
   getSlate,
   listSlates,
   setSlate,
@@ -386,6 +390,56 @@ leaguesRouter.put("/:id/slates/:week", async (req, res, next) => {
 
     const slate = await setSlate(clerkId, req.params.id, week, parsed.data.gameIds);
     res.json(slate);
+  } catch (error) {
+    if (error instanceof LeagueServiceError) {
+      res.status(error.status).json({
+        error: error.code ?? "league_error",
+        message: error.message,
+      });
+      return;
+    }
+    next(error);
+  }
+});
+
+leaguesRouter.get("/:id/leaderboard", async (req, res, next) => {
+  try {
+    const { userId: clerkId } = getAuth(req);
+    if (!clerkId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const leaderboard = await getSeasonLeaderboard(clerkId, req.params.id);
+    res.json(leaderboard);
+  } catch (error) {
+    if (error instanceof LeagueServiceError) {
+      res.status(error.status).json({
+        error: error.code ?? "league_error",
+        message: error.message,
+      });
+      return;
+    }
+    next(error);
+  }
+});
+
+leaguesRouter.get("/:id/leaderboard/:week", async (req, res, next) => {
+  try {
+    const { userId: clerkId } = getAuth(req);
+    if (!clerkId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const week = parseWeekParam(req.params.week);
+    if (!week) {
+      res.status(400).json({ error: "Invalid week" });
+      return;
+    }
+
+    const leaderboard = await getWeeklyLeaderboard(clerkId, req.params.id, week);
+    res.json(leaderboard);
   } catch (error) {
     if (error instanceof LeagueServiceError) {
       res.status(error.status).json({

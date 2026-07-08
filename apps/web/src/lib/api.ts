@@ -3,6 +3,7 @@ import type {
   CurrentUser,
   GamesResponse,
   InvitePreview,
+  LeaderboardResponse,
   League,
   LeagueDetail,
   MyLeaguesResponse,
@@ -196,6 +197,13 @@ export function useApiClient() {
     getPickSummary: (leagueId: string, week: number) =>
       apiFetch<PickSummaryResponse>(
         `/api/leagues/${leagueId}/picks/${week}/summary`,
+        getToken,
+      ),
+    getSeasonLeaderboard: (leagueId: string) =>
+      apiFetch<LeaderboardResponse>(`/api/leagues/${leagueId}/leaderboard`, getToken),
+    getWeeklyLeaderboard: (leagueId: string, week: number) =>
+      apiFetch<LeaderboardResponse>(
+        `/api/leagues/${leagueId}/leaderboard/${week}`,
         getToken,
       ),
   };

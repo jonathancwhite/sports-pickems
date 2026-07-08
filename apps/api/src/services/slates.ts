@@ -25,6 +25,11 @@ type SlateWithGames = {
   }>;
 };
 
+type UserPickInfo = {
+  pickedTeam: "home" | "away";
+  isCorrect: boolean | null;
+};
+
 async function findUserByClerkId(clerkId: string) {
   return prisma.user.findFirst({
     where: { clerkId, deletedAt: null },
@@ -85,9 +90,10 @@ function isSlateLockedByGames(
 
 function toSlateGame(
   game: SlateWithGames["games"][number]["game"],
-  userPicks?: Map<string, "home" | "away">,
+  userPicks?: Map<string, UserPickInfo>,
 ) {
-  const pickedTeam = userPicks?.get(game.id) ?? null;
+  const pickInfo = userPicks?.get(game.id);
+  const pickedTeam = pickInfo?.pickedTeam ?? null;
   return {
     id: game.id,
     homeTeam: game.homeTeam,
@@ -102,6 +108,7 @@ function toSlateGame(
     winner: game.winner as SlateDetail["games"][number]["winner"],
     picked: pickedTeam !== null && pickedTeam !== undefined,
     pickedTeam,
+    isCorrect: pickInfo?.isCorrect ?? null,
   };
 }
 
@@ -139,7 +146,7 @@ async function ensureSlateLocked(
 function mapSlateDetail(
   slate: SlateWithGames,
   lockedAt: Date | null,
-  userPicks?: Map<string, "home" | "away">,
+  userPicks?: Map<string, UserPickInfo>,
 ): SlateDetail {
   const games = slate.games.map((entry) => entry.game);
   const locked = lockedAt !== null || isSlateLockedByGames(slate, games);
@@ -185,7 +192,20 @@ export async function listSlates(
 
   const currentWeek = await getCurrentWeekForSeason(season.id);
 
-  return { slates: result, currentWeek };
+  let lastCompletedWeek: number | null = null;
+  for (let index = slates.length - 1; index >= 0; index -= 1) {
+    const slate = slates[index]!;
+    if (slate.games.length === 0) {
+      continue;
+    }
+    const allFinal = slate.games.every((entry) => entry.game.status === "final");
+    if (allFinal) {
+      lastCompletedWeek = slate.week;
+      break;
+    }
+  }
+
+  return { slates: result, currentWeek, lastCompletedWeek };
 }
 
 export async function getSlate(
@@ -219,7 +239,7 @@ export async function getSlate(
   const games = slate.games.map((entry) => entry.game);
   const lockedAt = await ensureSlateLocked(slate.id, games);
 
-  let userPicks: Map<string, "home" | "away"> | undefined;
+  let userPicks: Map<string, UserPickInfo> | undefined;
   if (options?.includeUserPicks) {
     const picks = await prisma.pick.findMany({
       where: {
@@ -227,9 +247,14 @@ export async function getSlate(
         userId: user.id,
         week,
       },
-      select: { gameId: true, pickedTeam: true },
+      select: { gameId: true, pickedTeam: true, isCorrect: true },
     });
-    userPicks = new Map(picks.map((pick) => [pick.gameId, pick.pickedTeam]));
+    userPicks = new Map(
+      picks.map((pick) => [
+        pick.gameId,
+        { pickedTeam: pick.pickedTeam, isCorrect: pick.isCorrect },
+      ]),
+    );
   }
 
   return mapSlateDetail(slate, lockedAt, userPicks);
