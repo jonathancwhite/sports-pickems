@@ -85,11 +85,12 @@ function BrowseLeaguesPage() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <FilterField label="Sport">
+        <FilterField label="Sport" id="browse-sport-filter">
           {sportsPending ? (
             <LoadingSpinner label="Loading sports…" />
           ) : (
             <select
+              id="browse-sport-filter"
               value={sportId}
               onChange={(event) => handleSportChange(event.target.value)}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm sm:w-48"
@@ -104,8 +105,9 @@ function BrowseLeaguesPage() {
           )}
         </FilterField>
 
-        <FilterField label="Classification">
+        <FilterField label="Classification" id="browse-classification-filter">
           <select
+            id="browse-classification-filter"
             value={classificationId}
             onChange={(event) => {
               setClassificationId(event.target.value);
@@ -123,8 +125,9 @@ function BrowseLeaguesPage() {
           </select>
         </FilterField>
 
-        <FilterField label="Sort by">
+        <FilterField label="Sort by" id="browse-sort-filter">
           <select
+            id="browse-sort-filter"
             value={sort}
             onChange={(event) => {
               setSort(event.target.value as PublicLeaguesQuery["sort"]);
@@ -169,8 +172,10 @@ function BrowseLeaguesPage() {
                 league={league}
                 onJoin={() => handleJoin(league)}
                 onJoinWaitlist={() => handleJoinWaitlist(league)}
-                isJoining={joinLeague.isPending}
-                isJoiningWaitlist={joinWaitlist.isPending}
+                isJoining={joinLeague.isPending && joinLeague.variables === league.id}
+                isJoiningWaitlist={
+                  joinWaitlist.isPending && joinWaitlist.variables === league.id
+                }
               />
             ))}
           </div>
@@ -204,10 +209,20 @@ function BrowseLeaguesPage() {
   );
 }
 
-function FilterField({ label, children }: { label: string; children: ReactNode }) {
+function FilterField({
+  label,
+  id,
+  children,
+}: {
+  label: string;
+  id: string;
+  children: ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium">{label}</label>
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
       {children}
     </div>
   );

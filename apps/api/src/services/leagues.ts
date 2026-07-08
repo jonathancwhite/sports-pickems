@@ -702,23 +702,6 @@ export async function removeMember(
     throw new LeagueServiceError("User not found", 404, "user_not_synced");
   }
 
-  const isCommissioner = await prisma.leagueMember.findFirst({
-    where: {
-      leagueId,
-      userId: user.id,
-      role: "commissioner",
-      league: { deletedAt: null },
-    },
-  });
-
-  if (!isCommissioner) {
-    throw new LeagueServiceError("Only the commissioner can remove members", 403);
-  }
-
-  if (targetUserId === user.id) {
-    throw new LeagueServiceError("Commissioners cannot remove themselves", 400);
-  }
-
   await prisma.$transaction(async (tx) => {
     const locked = await lockLeagueForUpdate(tx, leagueId);
     if (!locked) {
@@ -727,6 +710,23 @@ export async function removeMember(
 
     if (!locked.current_season_id) {
       throw new LeagueServiceError("League season not configured", 500);
+    }
+
+    const commissionerMembership = await tx.leagueMember.findFirst({
+      where: {
+        leagueId,
+        userId: user.id,
+        seasonId: locked.current_season_id,
+        role: "commissioner",
+      },
+    });
+
+    if (!commissionerMembership) {
+      throw new LeagueServiceError("Only the commissioner can remove members", 403);
+    }
+
+    if (targetUserId === user.id) {
+      throw new LeagueServiceError("Commissioners cannot remove themselves", 400);
     }
 
     const membership = await tx.leagueMember.findFirst({

@@ -252,30 +252,58 @@ export async function joinWaitlist(clerkId: string, leagueId: string): Promise<{
     throw new LeagueServiceError("You are already a member of this league", 409);
   }
 
-  const existingWaitlist = await prisma.leagueWaitlist.findUnique({
-    where: { leagueId_userId: { leagueId, userId: user.id } },
+  return prisma.$transaction(async (tx) => {
+    const lockedRows = await tx.$queryRaw<
+      Array<{ member_count: number; max_members: number; is_public: boolean; status: string }>
+    >`
+      SELECT member_count, max_members, is_public, status
+      FROM leagues
+      WHERE id = ${leagueId}::uuid AND deleted_at IS NULL
+      FOR UPDATE
+    `;
+
+    const locked = lockedRows[0];
+    if (!locked) {
+      throw new LeagueServiceError("League not found", 404);
+    }
+
+    if (locked.status === "archived") {
+      throw new LeagueServiceError("This league has been archived", 410);
+    }
+
+    if (!locked.is_public) {
+      throw new LeagueServiceError("This league is not public", 403, "league_not_public");
+    }
+
+    if (locked.member_count < locked.max_members) {
+      throw new LeagueServiceError("League is not full — use join instead", 400, "league_not_full");
+    }
+
+    const waitlistEntry = await tx.leagueWaitlist.findUnique({
+      where: { leagueId_userId: { leagueId, userId: user.id } },
+    });
+
+    if (waitlistEntry) {
+      throw new LeagueServiceError("You are already on the waitlist", 409, "already_on_waitlist");
+    }
+
+    const maxPosition = await tx.leagueWaitlist.aggregate({
+      where: { leagueId },
+      _max: { position: true },
+    });
+
+    const position = (maxPosition._max.position ?? 0) + 1;
+
+    await tx.leagueWaitlist.create({
+      data: {
+        leagueId,
+        userId: user.id,
+        position,
+      },
+    });
+
+    return { position };
   });
-
-  if (existingWaitlist) {
-    throw new LeagueServiceError("You are already on the waitlist", 409, "already_on_waitlist");
-  }
-
-  const maxPosition = await prisma.leagueWaitlist.aggregate({
-    where: { leagueId },
-    _max: { position: true },
-  });
-
-  const position = (maxPosition._max.position ?? 0) + 1;
-
-  await prisma.leagueWaitlist.create({
-    data: {
-      leagueId,
-      userId: user.id,
-      position,
-    },
-  });
-
-  return { position };
 }
 
 export async function getWaitlist(clerkId: string, leagueId: string): Promise<WaitlistResponse> {

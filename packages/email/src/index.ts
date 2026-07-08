@@ -31,15 +31,28 @@ export interface WaitlistInviteEmailData {
   expiresAt: Date;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function waitlistInviteEmailHtml({
   leagueName,
   inviteUrl,
   expiresAt,
 }: WaitlistInviteEmailData): string {
-  const expiresLabel = expiresAt.toLocaleString("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const safeLeagueName = escapeHtml(leagueName);
+  const safeInviteUrl = escapeHtml(inviteUrl);
+  const expiresLabel = escapeHtml(
+    expiresAt.toLocaleString("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }),
+  );
 
   return `
 <!DOCTYPE html>
@@ -50,10 +63,10 @@ export function waitlistInviteEmailHtml({
     <h1 style="margin: 0; font-size: 20px;">Callsheet</h1>
   </div>
   <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
-    <h2 style="margin: 0 0 12px; font-size: 18px;">A spot opened in ${leagueName}</h2>
+    <h2 style="margin: 0 0 12px; font-size: 18px;">A spot opened in ${safeLeagueName}</h2>
     <p style="margin: 0 0 16px;">You're next on the waitlist! Join within 48 hours before the spot is offered to someone else.</p>
     <p style="margin: 0 0 24px;">
-      <a href="${inviteUrl}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600;">Join league</a>
+      <a href="${safeInviteUrl}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600;">Join league</a>
     </p>
     <p style="margin: 0; font-size: 14px; color: #6b7280;">This invitation expires ${expiresLabel}.</p>
   </div>
