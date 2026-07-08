@@ -14,7 +14,7 @@ export async function findUserByClerkId(clerkId: string): Promise<CurrentUser | 
       theme: userPreferences.theme,
     })
     .from(users)
-    .innerJoin(userPreferences, eq(userPreferences.userId, users.id))
+    .leftJoin(userPreferences, eq(userPreferences.userId, users.id))
     .where(and(eq(users.clerkId, clerkId), isNull(users.deletedAt)))
     .limit(1);
 
