@@ -1,8 +1,15 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-export function LeagueListSkeleton({ count = 3 }: { count?: number }) {
+export function LeagueListSkeleton({
+  count = 3,
+  className,
+}: {
+  count?: number;
+  className?: string;
+}) {
   return (
-    <div className="space-y-3">
+    <div className={cn("space-y-3", className)}>
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="flex items-center gap-4 rounded-lg border bg-card p-4">
           <Skeleton className="size-10 shrink-0 rounded-full" />

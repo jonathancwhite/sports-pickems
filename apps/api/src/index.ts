@@ -9,6 +9,8 @@ import { clerkMiddleware } from "@clerk/express";
 import cors from "cors";
 import express from "express";
 import { healthRouter } from "./routes/health.js";
+import { leaguesRouter } from "./routes/leagues.js";
+import { sportsRouter } from "./routes/sports.js";
 import { usersRouter } from "./routes/users.js";
 import { clerkWebhookRouter } from "./routes/webhooks/clerk.js";
 import { requireAuthUnlessPublic } from "./middleware/clerk-auth.js";
@@ -35,6 +37,8 @@ app.use("/api", requireAuthUnlessPublic);
 
 app.use("/api", healthRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/leagues", leaguesRouter);
+app.use("/api/sports", sportsRouter);
 
 app.get("/", (_req, res) => {
   res.json({ name: "Callsheet API", version: "0.2.0" });

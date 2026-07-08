@@ -8,6 +8,8 @@ import {
   X,
 } from "lucide-react";
 import { APP_NAME } from "@callsheet/shared";
+import { LeagueListSkeleton } from "@/components/league-list-skeleton";
+import { useMyLeagues } from "@/hooks/use-leagues";
 import { cn } from "@/lib/utils";
 
 const mainNavItems = [
@@ -58,6 +60,42 @@ function NavLink({
   );
 }
 
+function SidebarLeagues({ onNavigate }: { onNavigate?: () => void }) {
+  const { data: myLeagues, isPending } = useMyLeagues();
+  const leagues = [
+    ...(myLeagues?.commissioning ?? []),
+    ...(myLeagues?.joined ?? []),
+  ];
+
+  if (isPending) {
+    return <LeagueListSkeleton count={2} className="px-3" />;
+  }
+
+  if (leagues.length === 0) {
+    return (
+      <p className="mt-2 px-3 text-sm text-muted-foreground">
+        Join or create a league to see it here.
+      </p>
+    );
+  }
+
+  return (
+    <nav className="mt-2 space-y-1">
+      {leagues.map((league) => (
+        <Link
+          key={league.id}
+          to="/leagues/$leagueId"
+          params={{ leagueId: league.id }}
+          onClick={onNavigate}
+          className="block truncate rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          {league.name}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 interface AppSidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -81,9 +119,7 @@ export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
         <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Your leagues
         </p>
-        <p className="mt-2 px-3 text-sm text-muted-foreground">
-          Join or create a league to see it here.
-        </p>
+        <SidebarLeagues onNavigate={onMobileClose} />
       </div>
     </>
   );
