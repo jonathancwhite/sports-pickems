@@ -15,7 +15,9 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
   const { redirect_url } = Route.useSearch();
-  const redirectUrl = redirect_url ?? "/dashboard";
+  // Only allow relative redirects to prevent open-redirect abuse
+  const redirectUrl =
+    redirect_url && redirect_url.startsWith("/") ? redirect_url : "/dashboard";
 
   return (
     <main className="flex min-h-screen items-center justify-center p-8">
