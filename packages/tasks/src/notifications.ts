@@ -1,11 +1,19 @@
 import { prisma, type NotificationType } from "@callsheet/db";
 import {
+  sendCommissionerTransferEmail,
   sendPickReminder48hEmail,
   sendPickReminder6hEmail,
+  sendSeasonEndedEmail,
+  sendSeasonInviteEmail,
   sendSlateChangeEmail,
 } from "@callsheet/email";
 import { getApplicablePickReminders } from "./reminder-windows.js";
-import { getPicksUrl } from "./web-url.js";
+import {
+  getLeagueSettingsUrl,
+  getPicksUrl,
+  getSeasonJoinUrl,
+  getTransferAcceptUrl,
+} from "./web-url.js";
 
 function isGameStarted(game: { startTime: Date; status: string }): boolean {
   if (game.status === "in_progress" || game.status === "final") {
@@ -232,4 +240,124 @@ export async function runNotifySlateChange(params: SlateChangeParams): Promise<{
   }
 
   return { sent };
+}
+
+export interface SendSeasonInvitesParams {
+  leagueId: string;
+  seasonId: string;
+  previousSeasonId: string;
+  leagueName: string;
+}
+
+export async function runSendSeasonInvites(
+  params: SendSeasonInvitesParams,
+): Promise<{ sent: number }> {
+  const members = await prisma.leagueMember.findMany({
+    where: {
+      leagueId: params.leagueId,
+      seasonId: params.previousSeasonId,
+      role: "member",
+      user: { deletedAt: null },
+    },
+    include: {
+      user: { select: { id: true, email: true } },
+    },
+  });
+
+  const joinUrl = getSeasonJoinUrl(params.leagueId);
+  let sent = 0;
+
+  for (const member of members) {
+    const didSend = await trySendNotification(
+      member.user,
+      params.leagueId,
+      "season_invite",
+      params.seasonId,
+      () =>
+        sendSeasonInviteEmail(member.user.email, {
+          leagueName: params.leagueName,
+          joinUrl,
+        }),
+    );
+
+    if (didSend) {
+      sent++;
+    }
+  }
+
+  return { sent };
+}
+
+export interface NotifySeasonEndedParams {
+  leagueId: string;
+}
+
+export async function runNotifySeasonEnded(
+  params: NotifySeasonEndedParams,
+): Promise<{ sent: number }> {
+  const league = await prisma.league.findFirst({
+    where: { id: params.leagueId, deletedAt: null },
+    include: {
+      commissioner: { select: { id: true, email: true } },
+      currentSeason: { select: { id: true } },
+    },
+  });
+
+  if (!league?.currentSeason) {
+    return { sent: 0 };
+  }
+
+  const settingsUrl = getLeagueSettingsUrl(params.leagueId);
+  const referenceId = league.currentSeason.id;
+
+  const didSend = await trySendNotification(
+    league.commissioner,
+    params.leagueId,
+    "season_ended",
+    referenceId,
+    () =>
+      sendSeasonEndedEmail(league.commissioner.email, {
+        leagueName: league.name,
+        settingsUrl,
+      }),
+  );
+
+  return { sent: didSend ? 1 : 0 };
+}
+
+export interface NotifyCommissionerTransferParams {
+  leagueId: string;
+  transferId: string;
+  leagueName: string;
+  targetEmail: string;
+  targetUserId: string;
+}
+
+export async function runNotifyCommissionerTransfer(
+  params: NotifyCommissionerTransferParams,
+): Promise<{ sent: number }> {
+  const acceptUrl = getTransferAcceptUrl(params.leagueId);
+
+  const user = await prisma.user.findUnique({
+    where: { id: params.targetUserId },
+    select: { id: true, email: true },
+  });
+
+  if (!user) {
+    return { sent: 0 };
+  }
+
+  const didSend = await trySendNotification(
+    user,
+    params.leagueId,
+    "commissioner_transfer",
+    params.transferId,
+    () =>
+      sendCommissionerTransferEmail(params.targetEmail, {
+        leagueName: params.leagueName,
+        acceptUrl,
+      }),
+  );
+
+  return { sent: didSend ? 1 : 0 };
 }

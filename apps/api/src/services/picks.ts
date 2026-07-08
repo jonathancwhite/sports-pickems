@@ -5,6 +5,7 @@ import type {
   SubmitPicksInput,
 } from "@callsheet/shared";
 import { LeagueServiceError } from "./leagues.js";
+import { assertLeagueWritable } from "./season-lifecycle.js";
 import { lockPicksForStartedGames } from "./pick-locks.js";
 import {
   ensureSlateLocked,
@@ -122,7 +123,9 @@ export async function submitPicks(
   week: number,
   input: SubmitPicksInput,
 ): Promise<PicksResponse> {
-  const { user, season } = await getLeagueContext(clerkId, leagueId);
+  const { user, league, season } = await getLeagueContext(clerkId, leagueId);
+
+  assertLeagueWritable(league);
 
   const slate = await getSlateForWeek(leagueId, season.id, week);
   if (!slate) {

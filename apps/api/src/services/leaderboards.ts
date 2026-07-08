@@ -131,8 +131,9 @@ export async function getWeeklyLeaderboard(
   clerkId: string,
   leagueId: string,
   week: number,
+  seasonId?: string,
 ): Promise<LeaderboardResponse> {
-  const { league, season } = await getLeagueContext(clerkId, leagueId);
+  const { league, season } = await getLeagueContext(clerkId, leagueId, seasonId);
   const entries = await buildLeaderboard(leagueId, season.id, league.tiePolicy, week);
 
   const hasScoredPicks = entries.some((entry) => entry.total > 0);
@@ -152,8 +153,9 @@ export async function getWeeklyLeaderboard(
 export async function getSeasonLeaderboard(
   clerkId: string,
   leagueId: string,
+  seasonId?: string,
 ): Promise<LeaderboardResponse> {
-  const { league, season } = await getLeagueContext(clerkId, leagueId);
+  const { league, season } = await getLeagueContext(clerkId, leagueId, seasonId);
   const entries = await buildLeaderboard(leagueId, season.id, league.tiePolicy);
 
   return { week: null, entries };

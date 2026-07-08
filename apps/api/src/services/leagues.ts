@@ -97,8 +97,10 @@ async function countActiveCreatedLeagues(
   return tx.league.count({
     where: {
       commissionerId: userId,
-      deletedAt: null,
-      status: { not: "archived" },
+      OR: [
+        { deletedAt: null, status: { not: "archived" } },
+        { deletedAt: { not: null }, countsTowardLimit: true },
+      ],
     },
   });
 }
@@ -111,7 +113,7 @@ type LockedLeagueRow = {
   status: "setup" | "active" | "archived";
 };
 
-async function lockLeagueForUpdate(
+export async function lockLeagueForUpdate(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   leagueId: string,
 ): Promise<LockedLeagueRow | null> {
@@ -273,6 +275,10 @@ export async function getMyLeagues(clerkId: string): Promise<MyLeaguesResponse> 
   const joined: League[] = [];
 
   for (const membership of memberships) {
+    if (membership.seasonId !== membership.league.currentSeasonId) {
+      continue;
+    }
+
     if (seen.has(membership.leagueId)) {
       continue;
     }
@@ -304,36 +310,79 @@ export async function getLeagueDetail(
 
   const league = await prisma.league.findFirst({
     where: { id: leagueId, deletedAt: null },
-    include: {
-      ...leagueInclude,
-      members: {
-        include: {
-          user: {
-            select: { id: true, username: true, avatarUrl: true },
-          },
-        },
-        orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
-      },
-    },
+    include: leagueInclude,
   });
 
   if (!league) {
     throw new LeagueServiceError("League not found", 404);
   }
 
-  const membership = league.members.find((member) => member.userId === user.id);
-  if (!membership) {
+  if (!league.currentSeasonId) {
+    throw new LeagueServiceError("League season not configured", 500);
+  }
+
+  const members = await prisma.leagueMember.findMany({
+    where: {
+      leagueId,
+      seasonId: league.currentSeasonId,
+    },
+    include: {
+      user: {
+        select: { id: true, username: true, avatarUrl: true },
+      },
+    },
+    orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
+  });
+
+  const membership = members.find((member) => member.userId === user.id);
+
+  const historicalMembership = membership
+    ? null
+    : await prisma.leagueMember.findFirst({
+        where: { leagueId, userId: user.id },
+      });
+
+  if (!membership && !historicalMembership) {
     throw new LeagueServiceError("You are not a member of this league", 403);
   }
 
   const base = mapLeague(league, {
-    role: membership.role,
-    isCommissioner: membership.role === "commissioner",
+    role: membership?.role ?? "member",
+    isCommissioner: membership?.role === "commissioner",
   });
+
+  const pendingTransfer = await prisma.commissionerTransfer.findFirst({
+    where: {
+      leagueId,
+      toUserId: user.id,
+      status: "pending",
+      expiresAt: { gt: new Date() },
+    },
+    include: {
+      fromUser: { select: { username: true } },
+      toUser: { select: { username: true } },
+    },
+  });
+
+  const pendingTransferForUser = pendingTransfer
+    ? {
+        id: pendingTransfer.id,
+        leagueId: pendingTransfer.leagueId,
+        fromUserId: pendingTransfer.fromUserId,
+        fromUsername: pendingTransfer.fromUser.username,
+        toUserId: pendingTransfer.toUserId,
+        toUsername: pendingTransfer.toUser.username,
+        status: pendingTransfer.status,
+        expiresAt: pendingTransfer.expiresAt.toISOString(),
+        createdAt: pendingTransfer.createdAt.toISOString(),
+      }
+    : null;
 
   return {
     ...base,
-    members: league.members.map((member) => ({
+    isCurrentMember: Boolean(membership),
+    pendingTransferForUser,
+    members: members.map((member) => ({
       id: member.id,
       userId: member.userId,
       username: member.user.username,
