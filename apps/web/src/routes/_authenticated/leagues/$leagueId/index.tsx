@@ -1,6 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Calendar, Crown, LogOut, Settings, Trash2, Trophy, Users } from "lucide-react";
+import {
+  Calendar,
+  Crown,
+  LogOut,
+  Settings,
+  Trash2,
+  Trophy,
+  Users,
+} from "lucide-react";
+import { GameCard, SlateEmptyState } from "@/components/game-card";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { WeekSelector } from "@/components/week-selector";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   useLeaveLeague,
@@ -8,6 +18,14 @@ import {
   useRemoveMember,
   useWaitlist,
 } from "@/hooks/use-leagues";
+import {
+  usePickSummary,
+  useSelectedWeek,
+  useSlate,
+  useSlates,
+  WEEKS,
+} from "@/hooks/use-slates-picks";
+import { formatPickStatus } from "@/lib/format";
 import { showApiError, showSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -15,25 +33,22 @@ export const Route = createFileRoute("/_authenticated/leagues/$leagueId/")({
   component: LeagueDetailPage,
 });
 
-const TABS: Array<{
-  id: string;
-  label: string;
-  icon: typeof Trophy;
-  disabled?: boolean;
-  commissionerOnly?: boolean;
-}> = [
-  { id: "overview", label: "Overview", icon: Trophy },
-  { id: "picks", label: "Picks", icon: Calendar, disabled: true },
-  { id: "schedule", label: "Schedule", icon: Calendar, commissionerOnly: true, disabled: true },
-  { id: "settings", label: "Settings", icon: Settings, commissionerOnly: true, disabled: true },
-] as const;
-
 function LeagueDetailPage() {
   const { leagueId } = Route.useParams();
   const navigate = useNavigate();
   const { data: currentUser } = useCurrentUser();
   const { data: league, isPending, isError } = useLeague(leagueId);
   const { data: waitlist } = useWaitlist(leagueId, Boolean(league?.isCommissioner));
+  const { data: slates } = useSlates(leagueId);
+  const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
+
+  const { data: slate, isPending: slatePending } = useSlate(
+    leagueId,
+    selectedWeek,
+    true,
+  );
+  const { data: pickSummary } = usePickSummary(leagueId, selectedWeek, Boolean(league));
+
   const leaveLeague = useLeaveLeague();
   const removeMember = useRemoveMember();
 
@@ -52,17 +67,15 @@ function LeagueDetailPage() {
     );
   }
 
-  const visibleTabs = TABS.filter(
-    (tab) => !tab.commissionerOnly || league.isCommissioner,
-  );
-
   const seasonActive =
     league.status === "active" || league.season?.status === "active";
-  const seasonUpcoming = league.season?.status === "upcoming" && !seasonActive;
+  const seasonUpcoming =
+    league.season?.status === "upcoming" && league.status === "setup";
   const currentMembership = league.members.find(
     (member) => member.userId === currentUser?.id,
   );
   const canLeave = currentMembership && !league.isCommissioner;
+  const hasSlates = (slates?.slates.length ?? 0) > 0;
 
   async function handleLeave() {
     if (
@@ -108,14 +121,30 @@ function LeagueDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            to="/leagues/$leagueId/picks"
+            params={{ leagueId }}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Make picks
+          </Link>
           {league.isCommissioner && (
-            <Link
-              to="/leagues/$leagueId/invite"
-              params={{ leagueId }}
-              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-            >
-              Invite members
-            </Link>
+            <>
+              <Link
+                to="/leagues/$leagueId/schedule"
+                params={{ leagueId }}
+                className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Manage schedule
+              </Link>
+              <Link
+                to="/leagues/$leagueId/invite"
+                params={{ leagueId }}
+                className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Invite members
+              </Link>
+            </>
           )}
           {canLeave && (
             <button
@@ -132,21 +161,21 @@ function LeagueDetailPage() {
       </div>
 
       <nav className="flex gap-1 overflow-x-auto border-b pb-px">
-        {visibleTabs.map((tab) => (
-          <span
-            key={tab.id}
-            className={cn(
-              "inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap",
-              tab.id === "overview"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground",
-              tab.disabled && "opacity-50",
-            )}
-          >
-            <tab.icon className="size-4" aria-hidden />
-            {tab.label}
-          </span>
-        ))}
+        <NavTab to="/leagues/$leagueId" params={{ leagueId }} active icon={Trophy}>
+          Overview
+        </NavTab>
+        <NavTab to="/leagues/$leagueId/picks" params={{ leagueId }} icon={Calendar}>
+          Picks
+        </NavTab>
+        {league.isCommissioner && (
+          <NavTab to="/leagues/$leagueId/schedule" params={{ leagueId }} icon={Calendar}>
+            Schedule
+          </NavTab>
+        )}
+        <span className="inline-flex items-center gap-2 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground opacity-50">
+          <Settings className="size-4" aria-hidden />
+          Settings
+        </span>
       </nav>
 
       {seasonActive && (
@@ -155,11 +184,60 @@ function LeagueDetailPage() {
         </div>
       )}
 
-      {seasonUpcoming && (
+      {seasonUpcoming && !hasSlates && (
         <div className="rounded-lg border border-dashed bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
-          Season hasn&apos;t started yet — waiting for commissioner to set the first week&apos;s
-          games
+          Season starts when the commissioner sets Week 1 slate
         </div>
+      )}
+
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            This week&apos;s slate
+          </h2>
+          <WeekSelector
+            weeks={WEEKS}
+            selectedWeek={selectedWeek}
+            onWeekChange={setSelectedWeek}
+            slates={slates?.slates}
+            className="max-w-full"
+          />
+        </div>
+
+        {slatePending ? (
+          <LoadingSpinner label="Loading slate…" />
+        ) : slate ? (
+          <ul className="space-y-3">
+            {slate.games.map((game) => (
+              <li key={game.id}>
+                <GameCard game={game} showPickStatus disabled />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <SlateEmptyState week={selectedWeek} hasSlate={false} />
+        )}
+      </section>
+
+      {pickSummary && (league.isCommissioner || pickSummary.locked) && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Pick status — Week {selectedWeek}
+          </h2>
+          <ul className="divide-y rounded-lg border bg-card">
+            {pickSummary.members.map((member) => (
+              <li key={member.userId} className="flex items-center justify-between px-4 py-3">
+                <div>
+                  <p className="font-medium">{member.username}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {member.picksMade} / {member.totalGames} games
+                  </p>
+                </div>
+                <PickStatusBadge status={member.status} />
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <section className="space-y-3">
@@ -240,6 +318,59 @@ function LeagueDetailPage() {
         />
       </div>
     </div>
+  );
+}
+
+function NavTab({
+  to,
+  params,
+  active,
+  icon: Icon,
+  children,
+}: {
+  to: string;
+  params: { leagueId: string };
+  active?: boolean;
+  icon: typeof Trophy;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      params={params}
+      className={cn(
+        "inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap",
+        active
+          ? "border-primary text-primary"
+          : "border-transparent text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <Icon className="size-4" aria-hidden />
+      {children}
+    </Link>
+  );
+}
+
+function PickStatusBadge({
+  status,
+}: {
+  status: "not_started" | "partial" | "complete";
+}) {
+  const styles = {
+    not_started: "bg-muted text-muted-foreground",
+    partial: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+    complete: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  } as const;
+
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-xs font-medium",
+        styles[status],
+      )}
+    >
+      {formatPickStatus(status)}
+    </span>
   );
 }
 
