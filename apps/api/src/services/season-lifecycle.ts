@@ -544,7 +544,7 @@ export async function getLeagueSettings(
   await requireCommissioner(clerkId, leagueId);
 
   const pendingTransfer = await prisma.commissionerTransfer.findFirst({
-    where: { leagueId, status: "pending" },
+    where: { leagueId, status: "pending", expiresAt: { gt: new Date() } },
     include: {
       fromUser: { select: { username: true } },
       toUser: { select: { username: true } },
@@ -582,7 +582,7 @@ export async function initiateCommissionerTransfer(
   }
 
   const existingPending = await prisma.commissionerTransfer.findFirst({
-    where: { leagueId, status: "pending" },
+    where: { leagueId, status: "pending", expiresAt: { gt: new Date() } },
   });
 
   if (existingPending) {
