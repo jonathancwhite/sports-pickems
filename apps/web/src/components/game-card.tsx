@@ -1,5 +1,7 @@
 import type { Game, SlateDetail, SlateListResponse } from "@callsheet/shared";
+import { Check, Minus, X } from "lucide-react";
 import { formatKickoff } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface GameCardProps {
   game: Game | SlateDetail["games"][number];
@@ -7,6 +9,7 @@ interface GameCardProps {
   onSelectTeam?: (team: "home" | "away") => void;
   disabled?: boolean;
   showPickStatus?: boolean;
+  showResultIcons?: boolean;
   otherPicks?: Array<{ username: string; pickedTeam: "home" | "away" }>;
 }
 
@@ -16,6 +19,7 @@ export function GameCard({
   onSelectTeam,
   disabled = false,
   showPickStatus = false,
+  showResultIcons = false,
   otherPicks = [],
 }: GameCardProps) {
   const gameLocked =
@@ -26,27 +30,38 @@ export function GameCard({
 
   const awayPicks = otherPicks.filter((pick) => pick.pickedTeam === "away");
   const homePicks = otherPicks.filter((pick) => pick.pickedTeam === "home");
+  const hasPick = selectedTeam !== null && selectedTeam !== undefined;
+  const isCorrect =
+    "isCorrect" in game && game.isCorrect !== undefined ? game.isCorrect : null;
 
   return (
     <article className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>{formatKickoff(game.startTime)}</span>
-        {gameLocked && (
-          <span className="rounded bg-muted px-2 py-0.5 font-medium uppercase tracking-wide">
-            Locked
-          </span>
-        )}
-        {showPickStatus && "picked" in game && (
-          <span
-            className={
-              game.picked
-                ? "font-medium text-primary"
-                : "text-muted-foreground"
-            }
-          >
-            {game.picked ? "Picked" : "Not picked"}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {showResultIcons && hasPick && isCorrect !== null && (
+            <PickResultIcon isCorrect={isCorrect} />
+          )}
+          {showResultIcons && !hasPick && game.status === "final" && (
+            <span className="text-muted-foreground" title="No pick">
+              <Minus className="size-4" aria-hidden />
+            </span>
+          )}
+          {gameLocked && (
+            <span className="rounded bg-muted px-2 py-0.5 font-medium uppercase tracking-wide">
+              Locked
+            </span>
+          )}
+          {showPickStatus && "picked" in game && (
+            <span
+              className={
+                game.picked ? "font-medium text-primary" : "text-muted-foreground"
+              }
+            >
+              {game.picked ? "Picked" : "Not picked"}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
@@ -57,6 +72,7 @@ export function GameCard({
           disabled={gameLocked || !onSelectTeam}
           onClick={() => onSelectTeam?.("away")}
           picks={awayPicks}
+          isWinner={game.status === "final" && game.winner === "away"}
         />
         <TeamButton
           label={game.homeTeam}
@@ -65,16 +81,53 @@ export function GameCard({
           disabled={gameLocked || !onSelectTeam}
           onClick={() => onSelectTeam?.("home")}
           picks={homePicks}
+          isWinner={game.status === "final" && game.winner === "home"}
         />
       </div>
 
-      {game.status === "final" && game.homeScore !== null && game.awayScore !== null && (
-        <p className="mt-3 text-center text-sm font-medium">
-          Final: {game.awayScore} – {game.homeScore}
-        </p>
-      )}
+      <GameScoreLine game={game} />
     </article>
   );
+}
+
+function PickResultIcon({ isCorrect }: { isCorrect: boolean }) {
+  if (isCorrect) {
+    return (
+      <span className="text-emerald-600 dark:text-emerald-400" title="Correct">
+        <Check className="size-4" aria-hidden />
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-destructive" title="Incorrect">
+      <X className="size-4" aria-hidden />
+    </span>
+  );
+}
+
+function GameScoreLine({ game }: { game: Game | SlateDetail["games"][number] }) {
+  if (game.status === "final" && game.homeScore !== null && game.awayScore !== null) {
+    return (
+      <p className="mt-3 text-center text-sm font-medium">
+        {game.awayTeam} {game.awayScore} – {game.homeScore} {game.homeTeam}
+      </p>
+    );
+  }
+
+  if (
+    game.status === "in_progress" &&
+    game.homeScore !== null &&
+    game.awayScore !== null
+  ) {
+    return (
+      <p className="mt-3 text-center text-sm font-medium text-amber-700 dark:text-amber-400">
+        Live: {game.awayScore} – {game.homeScore}
+      </p>
+    );
+  }
+
+  return null;
 }
 
 function TeamButton({
@@ -84,6 +137,7 @@ function TeamButton({
   disabled,
   onClick,
   picks,
+  isWinner,
 }: {
   label: string;
   abbr: string | null;
@@ -91,6 +145,7 @@ function TeamButton({
   disabled: boolean;
   onClick: () => void;
   picks: Array<{ username: string }>;
+  isWinner?: boolean;
 }) {
   return (
     <div className="space-y-2">
@@ -98,13 +153,12 @@ function TeamButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className={[
+        className={cn(
           "flex w-full items-center justify-between rounded-md border px-3 py-3 text-left text-sm font-medium transition-colors",
-          selected
-            ? "border-primary bg-primary/10 text-primary"
-            : "hover:bg-muted/60",
-          disabled ? "cursor-not-allowed opacity-60" : "",
-        ].join(" ")}
+          selected ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted/60",
+          isWinner && "border-emerald-500/50 bg-emerald-500/5",
+          disabled && "cursor-not-allowed opacity-60",
+        )}
       >
         <span>{abbr ?? label}</span>
         {selected && <span className="text-xs">Your pick</span>}

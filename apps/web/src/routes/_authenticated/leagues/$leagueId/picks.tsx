@@ -206,6 +206,7 @@ function PicksPage() {
                   selectedTeam={localPicks.get(game.id) ?? null}
                   onSelectTeam={(team) => selectTeam(game.id, team)}
                   disabled={gameLocked}
+                  showResultIcons
                   otherPicks={showAllPicks ? picksByGame.get(game.id) ?? [] : []}
                 />
               </li>

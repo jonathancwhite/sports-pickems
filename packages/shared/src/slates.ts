@@ -23,6 +23,7 @@ export type SlateSummary = z.infer<typeof slateSummarySchema>;
 export const slateListResponseSchema = z.object({
   slates: z.array(slateSummarySchema),
   currentWeek: z.number().int(),
+  lastCompletedWeek: z.number().int().nullable(),
 });
 
 export type SlateListResponse = z.infer<typeof slateListResponseSchema>;
@@ -30,6 +31,7 @@ export type SlateListResponse = z.infer<typeof slateListResponseSchema>;
 export const slateGameSchema = gameSchema.extend({
   picked: z.boolean().optional(),
   pickedTeam: z.enum(["home", "away"]).nullable().optional(),
+  isCorrect: z.boolean().nullable().optional(),
 });
 
 export type SlateGame = z.infer<typeof slateGameSchema>;

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { syncGamesRequestSchema } from "@callsheet/shared";
 import { processExpiredWaitlistInvites } from "../services/waitlist.js";
 import { syncGames, GamesServiceError } from "../services/games.js";
+import { scorePicks } from "../services/scoring.js";
 
 export const cronRouter = Router();
 
@@ -23,6 +24,16 @@ cronRouter.post("/waitlist-expiry", async (req, res) => {
   res.json({ processed });
 });
 
+cronRouter.post("/score-picks", async (req, res) => {
+  if (!verifyCronSecret(req)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const result = await scorePicks();
+  res.json(result);
+});
+
 cronRouter.post("/sync-games", async (req, res, next) => {
   if (!verifyCronSecret(req)) {
     res.status(401).json({ error: "Unauthorized" });
@@ -37,7 +48,8 @@ cronRouter.post("/sync-games", async (req, res, next) => {
     }
 
     const result = await syncGames(parsed.data);
-    res.json(result);
+    const scoring = await scorePicks();
+    res.json({ ...result, scored: scoring.scored });
   } catch (error) {
     if (error instanceof GamesServiceError) {
       res.status(error.status).json({

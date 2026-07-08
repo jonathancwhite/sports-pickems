@@ -87,6 +87,21 @@ export {
 } from "./picks.js";
 
 export {
+  assignLeaderboardRanks,
+  computeIsCorrect,
+  computePickPoints,
+} from "./scoring.js";
+
+export {
+  leaderboardEntrySchema,
+  leaderboardResponseSchema,
+  scorePicksResponseSchema,
+  type LeaderboardEntry,
+  type LeaderboardResponse,
+  type ScorePicksResponse,
+} from "./leaderboards.js";
+
+export {
   createLeagueSchema,
   joinLeagueSchema,
   leagueDetailSchema,
