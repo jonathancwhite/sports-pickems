@@ -1,0 +1,20 @@
+# Fly.io config for the Callsheet background worker
+# Deploy: fly deploy --config fly.worker.toml
+
+app = "callsheet-worker"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+  target = "worker"
+
+[env]
+  NODE_ENV = "production"
+
+[processes]
+  worker = "node apps/worker/dist/index.js"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

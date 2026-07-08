@@ -1,14 +1,11 @@
 import { config } from "dotenv";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getAbsurdApp, initAbsurdQueue, registerTasks } from "@callsheet/tasks";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 config({ path: resolve(__dirname, "../../../.env") });
 
-/**
- * Absurd SDK worker stub — task registration added in Sprint 10.
- * @see https://github.com/earendil-works/absurd
- */
 async function main() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
@@ -17,14 +14,23 @@ async function main() {
   }
 
   console.log("Callsheet worker starting...");
-  console.log("Absurd task registration will be added in Sprint 10.");
-  console.log("Worker ready (stub mode).");
 
-  // Keep process alive in dev
-  process.on("SIGINT", () => {
+  const app = getAbsurdApp();
+  registerTasks(app);
+  await initAbsurdQueue();
+
+  const worker = await app.startWorker();
+  console.log("Worker ready");
+
+  const shutdown = async () => {
     console.log("Worker shutting down...");
+    await worker.close();
+    await app.close();
     process.exit(0);
-  });
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 main().catch((err) => {

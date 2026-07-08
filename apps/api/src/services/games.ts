@@ -11,7 +11,8 @@ import {
   type MappedGame,
 } from "@callsheet/shared";
 import { lockSlatesForGame } from "./slates.js";
-import { scorePicksForGame } from "./scoring.js";
+import { clearPickScoresForGame, scorePicksForGame } from "./scoring.js";
+import { acquireServiceLock, releaseServiceLock } from "../lib/service-lock.js";
 
 const FBS_CLASSIFICATION_SLUG = "ncaa-fbs";
 const COMPLETED_GAME_RETENTION_DAYS = 7;
@@ -205,17 +206,21 @@ async function upsertMappedGame(
 
   if (mapped.status === "final") {
     await scorePicksForGame(game.id);
+  } else {
+    await clearPickScoresForGame(game.id);
   }
 
   return existing ? "updated" : "created";
 }
 
-let gameSyncInProgress = false;
+const GAME_SYNC_LOCK = "game-sync";
+const GAME_SYNC_OWNER = "api";
 
 export async function syncGames(
   input: SyncGamesRequest = {},
 ): Promise<SyncGamesResponse> {
-  if (gameSyncInProgress) {
+  const acquired = await acquireServiceLock(GAME_SYNC_LOCK, GAME_SYNC_OWNER);
+  if (!acquired) {
     console.log("[sync-games] skipped — sync already in progress");
     throw new GamesServiceError(
       "Game sync already in progress",
@@ -224,11 +229,10 @@ export async function syncGames(
     );
   }
 
-  gameSyncInProgress = true;
   try {
     return await runSyncGames(input);
   } finally {
-    gameSyncInProgress = false;
+    await releaseServiceLock(GAME_SYNC_LOCK, GAME_SYNC_OWNER);
   }
 }
 

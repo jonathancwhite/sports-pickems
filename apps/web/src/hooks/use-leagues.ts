@@ -137,3 +137,128 @@ export function useRemoveMember() {
     },
   });
 }
+
+export function useLeagueSeasons(leagueId: string, enabled = true) {
+  const api = useApiClient();
+
+  return useQuery({
+    queryKey: ["leagueSeasons", leagueId],
+    queryFn: () => api.getLeagueSeasons(leagueId),
+    enabled: enabled && Boolean(leagueId),
+  });
+}
+
+export function useLeagueSettings(leagueId: string, enabled = true) {
+  const api = useApiClient();
+
+  return useQuery({
+    queryKey: ["leagueSettings", leagueId],
+    queryFn: () => api.getLeagueSettings(leagueId),
+    enabled: enabled && Boolean(leagueId),
+  });
+}
+
+export function useStartNewSeason() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ leagueId, year }: { leagueId: string; year: number }) =>
+      api.startNewSeason(leagueId, { year }),
+    onSuccess: (league) => {
+      queryClient.invalidateQueries({ queryKey: MY_LEAGUES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["league", league.id] });
+      queryClient.invalidateQueries({ queryKey: ["leagueSeasons", league.id] });
+    },
+  });
+}
+
+export function useJoinSeason() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (leagueId: string) => api.joinSeason(leagueId),
+    onSuccess: (league) => {
+      queryClient.invalidateQueries({ queryKey: MY_LEAGUES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["league", league.id] });
+    },
+  });
+}
+
+export function useUpdateLeague() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      leagueId,
+      input,
+    }: {
+      leagueId: string;
+      input: import("@callsheet/shared").UpdateLeagueInput;
+    }) => api.updateLeague(leagueId, input),
+    onSuccess: (league) => {
+      queryClient.setQueryData(["league", league.id], (old: import("@callsheet/shared").LeagueDetail | undefined) =>
+        old ? { ...old, ...league } : league,
+      );
+      queryClient.invalidateQueries({ queryKey: MY_LEAGUES_QUERY_KEY });
+    },
+  });
+}
+
+export function useDeleteLeague() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (leagueId: string) => api.deleteLeague(leagueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MY_LEAGUES_QUERY_KEY });
+    },
+  });
+}
+
+export function useInitiateTransfer() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      leagueId,
+      targetUserId,
+    }: {
+      leagueId: string;
+      targetUserId: string;
+    }) => api.initiateTransfer(leagueId, { targetUserId }),
+    onSuccess: (_data, { leagueId }) => {
+      queryClient.invalidateQueries({ queryKey: ["leagueSettings", leagueId] });
+    },
+  });
+}
+
+export function useAcceptTransfer() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (leagueId: string) => api.acceptTransfer(leagueId),
+    onSuccess: (league) => {
+      queryClient.invalidateQueries({ queryKey: MY_LEAGUES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["league", league.id] });
+      queryClient.invalidateQueries({ queryKey: ["leagueSettings", league.id] });
+    },
+  });
+}
+
+export function useDeclineTransfer() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (leagueId: string) => api.declineTransfer(leagueId),
+    onSuccess: (_data, leagueId) => {
+      queryClient.invalidateQueries({ queryKey: ["leagueSettings", leagueId] });
+    },
+  });
+}

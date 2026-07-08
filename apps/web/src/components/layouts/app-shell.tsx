@@ -2,13 +2,16 @@ import { UserButton } from "@clerk/clerk-react";
 import { Outlet } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppSidebar, MobileMenuButton } from "@/components/app-sidebar";
+import { ProBadge } from "@/components/pro-badge";
 import { ThemeProvider, getStoredTheme } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useCurrentUser, useUpdateTheme } from "@/hooks/use-current-user";
+import { useUserPlan } from "@/hooks/use-user-plan";
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: user } = useCurrentUser();
+  const { isPro } = useUserPlan();
   const updateTheme = useUpdateTheme();
   const theme = user?.preferences.theme ?? getStoredTheme();
 
@@ -31,6 +34,7 @@ export function AppShell() {
               onChange={(next) => updateTheme.mutate(next)}
               disabled={updateTheme.isPending}
             />
+            {isPro && <ProBadge />}
             <UserButton
               afterSignOutUrl="/"
               appearance={{

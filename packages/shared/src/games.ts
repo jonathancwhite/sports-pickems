@@ -9,6 +9,17 @@ export const gameStatusSchema = z.enum([
 ]);
 export type GameStatus = z.infer<typeof gameStatusSchema>;
 
+/** Game statuses that allow a season to be marked complete (includes postponed — season may end with unplayed games). */
+export const SEASON_COMPLETION_TERMINAL_STATUSES: readonly GameStatus[] = [
+  "final",
+  "cancelled",
+  "postponed",
+] as const;
+
+export function isSeasonCompletionTerminalStatus(status: GameStatus): boolean {
+  return SEASON_COMPLETION_TERMINAL_STATUSES.includes(status);
+}
+
 export const gameWinnerSchema = z.enum(["home", "away", "tie"]);
 export type GameWinner = z.infer<typeof gameWinnerSchema>;
 

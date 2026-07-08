@@ -117,17 +117,18 @@ export function usePickSummary(leagueId: string, week: number, enabled = true) {
 export function useLeaderboard(
   leagueId: string,
   week?: number,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; seasonId?: string },
 ) {
   const api = useApiClient();
   const isWeekly = week !== undefined;
+  const seasonId = options?.seasonId;
 
   return useQuery({
-    queryKey: ["leaderboard", leagueId, week ?? "season"],
+    queryKey: ["leaderboard", leagueId, week ?? "season", seasonId ?? "current"],
     queryFn: () =>
       isWeekly
-        ? api.getWeeklyLeaderboard(leagueId, week)
-        : api.getSeasonLeaderboard(leagueId),
+        ? api.getWeeklyLeaderboard(leagueId, week, seasonId)
+        : api.getSeasonLeaderboard(leagueId, seasonId),
     enabled: (options?.enabled ?? true) && Boolean(leagueId) && (isWeekly ? week > 0 : true),
   });
 }

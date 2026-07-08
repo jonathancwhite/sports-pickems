@@ -13,6 +13,29 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return;
+          }
+          if (id.includes("@tanstack/react-router")) {
+            return "router";
+          }
+          if (id.includes("@tanstack/react-query")) {
+            return "query";
+          }
+          if (id.includes("@clerk")) {
+            return "clerk";
+          }
+          if (id.includes("react-dom") || id.includes("/react/")) {
+            return "react";
+          }
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
