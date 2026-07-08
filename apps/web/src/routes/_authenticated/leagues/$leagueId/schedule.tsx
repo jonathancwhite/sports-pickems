@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Lock, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { resolveDefaultWeek, WeekSelector } from "@/components/week-selector";
+import { WeekSelector } from "@/components/week-selector";
 import { MIN_SLATE_GAMES } from "@callsheet/shared";
 import {
   useGames,
+  useSelectedWeek,
   useSetSlate,
   useSlate,
   useSlates,
@@ -24,7 +25,7 @@ function CommissionerSchedulePage() {
   const { leagueId } = Route.useParams();
   const { data: league, isPending: leaguePending } = useLeague(leagueId);
   const { data: slates } = useSlates(leagueId);
-  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
   const [selectedGameIds, setSelectedGameIds] = useState<Set<string>>(new Set());
 
   const { data: weekGames, isPending: gamesPending } = useGames(
@@ -34,12 +35,6 @@ function CommissionerSchedulePage() {
   );
   const { data: existingSlate, isPending: slatePending } = useSlate(leagueId, selectedWeek);
   const setSlate = useSetSlate(leagueId);
-
-  useEffect(() => {
-    if (slates?.slates) {
-      setSelectedWeek(resolveDefaultWeek(slates.slates, 1));
-    }
-  }, [slates?.slates]);
 
   useEffect(() => {
     if (existingSlate) {

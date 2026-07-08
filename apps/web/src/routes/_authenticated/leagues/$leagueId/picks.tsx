@@ -3,9 +3,10 @@ import { Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { GameCard } from "@/components/game-card";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { resolveDefaultWeek, WeekSelector } from "@/components/week-selector";
+import { WeekSelector } from "@/components/week-selector";
 import {
   usePicks,
+  useSelectedWeek,
   useSlate,
   useSlates,
   useSubmitPicks,
@@ -23,7 +24,7 @@ function PicksPage() {
   const { leagueId } = Route.useParams();
   const { data: league, isPending: leaguePending } = useLeague(leagueId);
   const { data: slates } = useSlates(leagueId);
-  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
   const [localPicks, setLocalPicks] = useState<Map<string, "home" | "away">>(new Map());
   const [showAllPicks, setShowAllPicks] = useState(false);
 
@@ -39,12 +40,6 @@ function PicksPage() {
     enabled: locked && showAllPicks,
   });
   const submitPicks = useSubmitPicks(leagueId, selectedWeek);
-
-  useEffect(() => {
-    if (slates?.slates) {
-      setSelectedWeek(resolveDefaultWeek(slates.slates, 1));
-    }
-  }, [slates?.slates]);
 
   useEffect(() => {
     if (myPicks?.picks) {
@@ -112,7 +107,7 @@ function PicksPage() {
   }
 
   async function handleSave() {
-    if (locked || localPicks.size === 0) {
+    if (locked) {
       return;
     }
 

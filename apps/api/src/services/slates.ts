@@ -2,6 +2,7 @@ import { prisma } from "@callsheet/db";
 import type { SlateDetail, SlateListResponse } from "@callsheet/shared";
 import { MIN_SLATE_GAMES } from "@callsheet/shared";
 import { LeagueServiceError } from "./leagues.js";
+import { lockPicksForStartedGames } from "./pick-locks.js";
 
 type SlateWithGames = {
   id: string;
@@ -123,10 +124,12 @@ async function ensureSlateLocked(
 
   if (games.some(isGameStarted)) {
     const lockedAt = new Date();
-    await prisma.leagueWeekSlate.update({
+    const slate = await prisma.leagueWeekSlate.update({
       where: { id: slateId },
       data: { lockedAt },
+      select: { leagueId: true, week: true },
     });
+    await lockPicksForStartedGames(slate.leagueId, slate.week);
     return lockedAt;
   }
 
@@ -180,7 +183,9 @@ export async function listSlates(
     }),
   );
 
-  return { slates: result };
+  const currentWeek = await getCurrentWeekForSeason(season.id);
+
+  return { slates: result, currentWeek };
 }
 
 export async function getSlate(
@@ -268,6 +273,15 @@ export async function setSlate(
       "One or more games are invalid for this week or season",
       400,
       "invalid_games",
+    );
+  }
+
+  const startedGame = games.find(isGameStarted);
+  if (startedGame) {
+    throw new LeagueServiceError(
+      `Cannot add ${startedGame.awayTeam} @ ${startedGame.homeTeam} — game has already started`,
+      400,
+      "game_started",
     );
   }
 
@@ -394,6 +408,18 @@ export async function lockSlatesForGame(gameId: string): Promise<void> {
   const slateIds = [...new Set(slateGames.map((entry) => entry.slateId))];
   const now = new Date();
 
+  const slatesToLock = await prisma.leagueWeekSlate.findMany({
+    where: {
+      id: { in: slateIds },
+      lockedAt: null,
+    },
+    select: { leagueId: true, week: true },
+  });
+
+  if (slatesToLock.length === 0) {
+    return;
+  }
+
   await prisma.leagueWeekSlate.updateMany({
     where: {
       id: { in: slateIds },
@@ -401,6 +427,16 @@ export async function lockSlatesForGame(gameId: string): Promise<void> {
     },
     data: { lockedAt: now },
   });
+
+  const seen = new Set<string>();
+  for (const slate of slatesToLock) {
+    const key = `${slate.leagueId}:${slate.week}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    await lockPicksForStartedGames(slate.leagueId, slate.week);
+  }
 }
 
 export async function getCurrentWeekForSeason(seasonId: string): Promise<number> {

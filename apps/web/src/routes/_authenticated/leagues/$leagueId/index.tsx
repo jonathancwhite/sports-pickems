@@ -8,10 +8,9 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { GameCard, SlateEmptyState } from "@/components/game-card";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { resolveDefaultWeek, WeekSelector } from "@/components/week-selector";
+import { WeekSelector } from "@/components/week-selector";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   useLeaveLeague,
@@ -21,6 +20,7 @@ import {
 } from "@/hooks/use-leagues";
 import {
   usePickSummary,
+  useSelectedWeek,
   useSlate,
   useSlates,
   WEEKS,
@@ -40,27 +40,17 @@ function LeagueDetailPage() {
   const { data: league, isPending, isError } = useLeague(leagueId);
   const { data: waitlist } = useWaitlist(leagueId, Boolean(league?.isCommissioner));
   const { data: slates } = useSlates(leagueId);
-  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
 
   const { data: slate, isPending: slatePending } = useSlate(
     leagueId,
     selectedWeek,
     true,
   );
-  const { data: pickSummary } = usePickSummary(
-    leagueId,
-    selectedWeek,
-    Boolean(league?.isCommissioner),
-  );
+  const { data: pickSummary } = usePickSummary(leagueId, selectedWeek, Boolean(league));
 
   const leaveLeague = useLeaveLeague();
   const removeMember = useRemoveMember();
-
-  useEffect(() => {
-    if (slates?.slates) {
-      setSelectedWeek(resolveDefaultWeek(slates.slates, 1));
-    }
-  }, [slates?.slates]);
 
   if (isPending) {
     return <LoadingSpinner label="Loading league…" />;
@@ -229,7 +219,7 @@ function LeagueDetailPage() {
         )}
       </section>
 
-      {league.isCommissioner && pickSummary && (
+      {pickSummary && (league.isCommissioner || pickSummary.locked) && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Pick status — Week {selectedWeek}

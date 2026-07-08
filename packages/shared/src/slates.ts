@@ -22,6 +22,7 @@ export type SlateSummary = z.infer<typeof slateSummarySchema>;
 
 export const slateListResponseSchema = z.object({
   slates: z.array(slateSummarySchema),
+  currentWeek: z.number().int(),
 });
 
 export type SlateListResponse = z.infer<typeof slateListResponseSchema>;

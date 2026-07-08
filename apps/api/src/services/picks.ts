@@ -5,6 +5,7 @@ import type {
   SubmitPicksInput,
 } from "@callsheet/shared";
 import { LeagueServiceError } from "./leagues.js";
+import { lockPicksForStartedGames } from "./pick-locks.js";
 import {
   ensureSlateLocked,
   getLeagueContext,
@@ -159,7 +160,75 @@ export async function submitPicks(
 
   const now = new Date();
 
+  const submittedGameIds = new Set(input.picks.map((pick) => pick.gameId));
+
   await prisma.$transaction(async (tx) => {
+    const freshSlate = await tx.leagueWeekSlate.findUnique({
+      where: {
+        leagueId_seasonId_week: { leagueId, seasonId: season.id, week },
+      },
+      include: {
+        games: { include: { game: true } },
+      },
+    });
+
+    if (!freshSlate) {
+      throw new LeagueServiceError("No slate set for this week", 404, "slate_not_found");
+    }
+
+    const freshGames = freshSlate.games.map((entry) => entry.game);
+    if (
+      freshSlate.lockedAt ||
+      isSlateLockedByGames(freshSlate, freshGames)
+    ) {
+      throw new LeagueServiceError("This week's slate is locked", 403, "slate_locked");
+    }
+
+    const freshGameMap = new Map(
+      freshSlate.games.map((entry) => [entry.gameId, entry.game]),
+    );
+
+    for (const pick of input.picks) {
+      const game = freshGameMap.get(pick.gameId);
+      if (!game) {
+        throw new LeagueServiceError(
+          `Game ${pick.gameId} is not in this week's slate`,
+          400,
+          "invalid_game",
+        );
+      }
+
+      if (isGameStarted(game)) {
+        throw new LeagueServiceError(
+          `Game ${game.awayTeam} @ ${game.homeTeam} has already started`,
+          403,
+          "game_locked",
+        );
+      }
+    }
+
+    const removableGameIds = freshSlate.games
+      .map((entry) => entry.gameId)
+      .filter((gameId) => {
+        if (submittedGameIds.has(gameId)) {
+          return false;
+        }
+        const game = freshGameMap.get(gameId);
+        return game !== undefined && !isGameStarted(game);
+      });
+
+    if (removableGameIds.length > 0) {
+      await tx.pick.deleteMany({
+        where: {
+          leagueId,
+          userId: user.id,
+          week,
+          gameId: { in: removableGameIds },
+          lockedAt: null,
+        },
+      });
+    }
+
     for (const pick of input.picks) {
       await tx.pick.upsert({
         where: {
@@ -251,38 +320,4 @@ export async function getPickSummary(
       };
     }),
   };
-}
-
-export async function lockPicksForStartedGames(leagueId: string, week: number): Promise<void> {
-  const now = new Date();
-
-  const startedGames = await prisma.game.findMany({
-    where: {
-      week,
-      OR: [
-        { startTime: { lte: now } },
-        { status: { in: ["in_progress", "final"] } },
-      ],
-      leagueWeekSlateGames: {
-        some: {
-          slate: { leagueId, week },
-        },
-      },
-    },
-    select: { id: true },
-  });
-
-  if (startedGames.length === 0) {
-    return;
-  }
-
-  await prisma.pick.updateMany({
-    where: {
-      leagueId,
-      week,
-      gameId: { in: startedGames.map((game) => game.id) },
-      lockedAt: null,
-    },
-    data: { lockedAt: now },
-  });
 }

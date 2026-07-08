@@ -3,6 +3,24 @@ import type { SubmitPicksInput } from "@callsheet/shared";
 import { useApiClient } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 
+import { useEffect, useRef, useState } from "react";
+import type { SlateListResponse } from "@callsheet/shared";
+import { resolveDefaultWeek } from "@/components/week-selector";
+
+export function useSelectedWeek(slates: SlateListResponse | undefined) {
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (!initialized.current && slates) {
+      setSelectedWeek(resolveDefaultWeek(slates.slates, slates.currentWeek));
+      initialized.current = true;
+    }
+  }, [slates]);
+
+  return [selectedWeek ?? slates?.currentWeek ?? 1, setSelectedWeek] as const;
+}
+
 export function useSlates(leagueId: string) {
   const api = useApiClient();
 
