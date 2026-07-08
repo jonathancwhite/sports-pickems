@@ -14,11 +14,14 @@
     "@callsheet/db": "workspace:*",
     "@callsheet/shared": "workspace:*",
     "@clerk/express": "^2.1.37",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "nanoid": "^5.1.16"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.7",
