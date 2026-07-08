@@ -1,5 +1,10 @@
 import { prisma } from "@callsheet/db";
-import type { Game, GamesQuery, SyncGamesRequest, SyncGamesResponse } from "@callsheet/shared";
+import type {
+  Game,
+  GamesQuery,
+  SyncGamesRequest,
+  SyncGamesResponse,
+} from "@callsheet/shared";
 import {
   fetchFbsRegularSeasonWeeks,
   fetchFbsScoreboard,
@@ -28,7 +33,11 @@ async function resolveFbsClassification(classificationId?: string) {
       where: { id: classificationId },
     });
     if (!classification) {
-      throw new GamesServiceError("Classification not found", 404, "classification_not_found");
+      throw new GamesServiceError(
+        "Classification not found",
+        404,
+        "classification_not_found",
+      );
     }
   } else {
     classification = await prisma.classification.findFirst({
@@ -121,7 +130,10 @@ function toApiGame(game: {
   };
 }
 
-async function upsertMappedGame(seasonId: string, mapped: MappedGame): Promise<"created" | "updated"> {
+async function upsertMappedGame(
+  seasonId: string,
+  mapped: MappedGame,
+): Promise<"created" | "updated"> {
   const existing = await prisma.game.findUnique({
     where: {
       seasonId_externalId: {
@@ -171,7 +183,25 @@ async function upsertMappedGame(seasonId: string, mapped: MappedGame): Promise<"
   return existing ? "updated" : "created";
 }
 
-export async function syncGames(input: SyncGamesRequest = {}): Promise<SyncGamesResponse> {
+let gameSyncInProgress = false;
+
+export async function syncGames(
+  input: SyncGamesRequest = {},
+): Promise<SyncGamesResponse> {
+  if (gameSyncInProgress) {
+    console.log("[sync-games] skipped — sync already in progress");
+    return { synced: 0, updated: 0, errors: [] };
+  }
+
+  gameSyncInProgress = true;
+  try {
+    return await runSyncGames(input);
+  } finally {
+    gameSyncInProgress = false;
+  }
+}
+
+async function runSyncGames(input: SyncGamesRequest): Promise<SyncGamesResponse> {
   const classification = await resolveFbsClassification(input.classificationId);
   const seasonYear =
     input.seasonYear ?? (await resolveDefaultSeasonYear(classification.id));
@@ -239,10 +269,7 @@ export async function listGames(query: GamesQuery): Promise<{ games: Game[] }> {
     where: {
       seasonId: query.seasonId,
       week: query.week,
-      OR: [
-        { status: { not: "final" } },
-        { startTime: { gte: cutoff } },
-      ],
+      OR: [{ status: { not: "final" } }, { startTime: { gte: cutoff } }],
     },
     orderBy: { startTime: "asc" },
   });
