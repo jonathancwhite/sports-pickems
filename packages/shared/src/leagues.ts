@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PRO_TIER_MAX_MEMBERS } from "./billing.js";
 
 export const tiePolicySchema = z.enum(["no_points", "count_as_correct", "half_point"]);
 export type TiePolicy = z.infer<typeof tiePolicySchema>;
@@ -19,7 +20,7 @@ export const createLeagueSchema = z
     classificationId: z.string().uuid(),
     isPublic: z.boolean(),
     password: z.string().min(4).max(100).nullable(),
-    maxMembers: z.number().int().min(2).max(10),
+    maxMembers: z.number().int().min(2).max(PRO_TIER_MAX_MEMBERS),
     tiePolicy: tiePolicySchema,
   })
   .superRefine((data, ctx) => {
@@ -153,6 +154,8 @@ export const leagueLimitErrorSchema = z.object({
 
 export type LeagueLimitError = z.infer<typeof leagueLimitErrorSchema>;
 
+export { upgradeRequiredErrorSchema, type UpgradeRequiredError } from "./billing.js";
+
 export const publicLeaguesQuerySchema = z.object({
   sportId: z.string().uuid().optional(),
   classificationId: z.string().uuid().optional(),
@@ -210,6 +213,7 @@ export type WaitlistResponse = z.infer<typeof waitlistResponseSchema>;
 
 export const FREE_TIER_MAX_LEAGUES = 2;
 export const FREE_TIER_MAX_MEMBERS = 10;
+export { PRO_TIER_MAX_MEMBERS } from "./billing.js";
 export const SEASON_ARCHIVE_BUFFER_DAYS = 7;
 export const COMMISSIONER_TRANSFER_EXPIRY_DAYS = 7;
 

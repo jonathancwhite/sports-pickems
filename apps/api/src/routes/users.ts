@@ -2,6 +2,8 @@ import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { updatePreferencesSchema } from "@callsheet/shared";
 import { findUserByClerkId, updateUserPreferences } from "../services/users.js";
+import { getActiveCreatedLeagueCount } from "../services/leagues.js";
+import { getUserBilling } from "../services/billing.js";
 
 export const usersRouter = Router();
 
@@ -24,6 +26,22 @@ usersRouter.get("/me", async (req, res, next) => {
     }
 
     res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+usersRouter.get("/me/billing", async (req, res, next) => {
+  try {
+    const { userId: clerkId, has } = getAuth(req);
+    if (!clerkId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const activeCreatedLeagueCount = await getActiveCreatedLeagueCount(clerkId);
+    const billing = await getUserBilling(clerkId, has, activeCreatedLeagueCount);
+    res.json(billing);
   } catch (error) {
     next(error);
   }

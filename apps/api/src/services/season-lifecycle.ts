@@ -15,6 +15,7 @@ import {
 } from "@callsheet/shared";
 import { spawnTask } from "@callsheet/tasks";
 import { LeagueServiceError, lockLeagueForUpdate } from "./leagues.js";
+import { assertMaxMembersAllowed, type UserPlan } from "./billing.js";
 
 const leagueInclude = {
   sport: true,
@@ -459,6 +460,7 @@ export async function updateLeague(
   clerkId: string,
   leagueId: string,
   input: UpdateLeagueInput,
+  plan: UserPlan,
 ): Promise<League> {
   const { league } = await requireCommissioner(clerkId, leagueId);
 
@@ -477,6 +479,10 @@ export async function updateLeague(
         "season_locked",
       );
     }
+  }
+
+  if (input.maxMembers !== undefined) {
+    assertMaxMembersAllowed(plan, input.maxMembers);
   }
 
   const updated = await prisma.league.update({

@@ -3,6 +3,7 @@ import {
   createLeagueSchema,
   FREE_TIER_MAX_LEAGUES,
   FREE_TIER_MAX_MEMBERS,
+  PRO_TIER_MAX_MEMBERS,
   TIE_POLICY_OPTIONS,
   type CreateLeagueInput,
 } from "@callsheet/shared";
@@ -10,7 +11,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { useCreateLeague, useMyLeagues, useSports } from "@/hooks/use-leagues";
+import { ProBadge } from "@/components/pro-badge";
+import { useCreatedLeagueCount } from "@/hooks/use-billing";
+import { useUserPlan } from "@/hooks/use-user-plan";
+import { useCreateLeague, useSports } from "@/hooks/use-leagues";
 import { showApiError, showSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -33,11 +37,13 @@ function CreateLeaguePage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const { data: sports, isPending: sportsLoading } = useSports();
-  const { data: myLeagues, isPending: leaguesLoading } = useMyLeagues();
+  const { data: createdCountData, isPending: countLoading } = useCreatedLeagueCount();
+  const { isLoaded: planLoaded, isPro } = useUserPlan();
   const createLeague = useCreateLeague();
 
-  const commissioningCount = myLeagues?.commissioning.length ?? 0;
-  const atLeagueLimit = commissioningCount >= FREE_TIER_MAX_LEAGUES;
+  const activeCreatedCount = createdCountData?.count ?? 0;
+  const atLeagueLimit = !isPro && activeCreatedCount >= FREE_TIER_MAX_LEAGUES;
+  const maxMembersLimit = isPro ? PRO_TIER_MAX_MEMBERS : FREE_TIER_MAX_MEMBERS;
 
   const form = useForm<WizardForm>({
     resolver: zodResolver(createLeagueSchema),
@@ -47,7 +53,7 @@ function CreateLeaguePage() {
       classificationId: "",
       isPublic: true,
       password: null,
-      maxMembers: 10,
+      maxMembers: FREE_TIER_MAX_MEMBERS,
       tiePolicy: "no_points",
     },
     mode: "onChange",
@@ -76,17 +82,24 @@ function CreateLeaguePage() {
     }
 
     const football = sports.find((sport) => sport.slug === "football");
-    const fbs = football?.classifications.find(
-      (classification) => classification.slug === "ncaa-fbs",
-    );
+    const defaultClassification =
+      football?.classifications.find((classification) => classification.tier === "core" && classification.active) ??
+      football?.classifications.find((classification) => classification.slug === "ncaa-fbs");
 
-    if (football && fbs) {
+    if (football && defaultClassification) {
       setValue("sportId", football.id);
-      setValue("classificationId", fbs.id);
+      setValue("classificationId", defaultClassification.id);
     }
   }, [sports, sportId, setValue]);
 
-  if (sportsLoading || leaguesLoading) {
+  useEffect(() => {
+    const current = watch("maxMembers");
+    if (current > maxMembersLimit) {
+      setValue("maxMembers", maxMembersLimit);
+    }
+  }, [maxMembersLimit, setValue, watch]);
+
+  if (sportsLoading || countLoading || !planLoaded) {
     return <LoadingSpinner label="Loading league options…" />;
   }
 
@@ -105,13 +118,12 @@ function CreateLeaguePage() {
             Upgrade to Pro for unlimited leagues.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              disabled
-              className="rounded-md bg-primary/50 px-4 py-2 text-sm font-medium text-primary-foreground"
+            <Link
+              to="/settings/billing"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
-              Upgrade to Pro (coming soon)
-            </button>
+              Upgrade to Pro
+            </Link>
             <Link
               to="/dashboard"
               className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
@@ -200,50 +212,50 @@ function CreateLeaguePage() {
               Choose the sport and classification for your league.
             </p>
             <div className="space-y-3">
-              {sports?.map((sport) => {
-                const isFootball = sport.slug === "football";
-                return (
-                  <div key={sport.id} className="space-y-2">
-                    <p className="text-sm font-medium">{sport.name}</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {sport.classifications.map((classification) => {
-                        const isFbs = classification.slug === "ncaa-fbs";
-                        const enabled = isFootball && isFbs;
-                        const selected = classificationId === classification.id;
+              {sports?.map((sport) => (
+                <div key={sport.id} className="space-y-2">
+                  <p className="text-sm font-medium">{sport.name}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {sport.classifications.map((classification) => {
+                      const isBeta = classification.tier === "beta";
+                      const enabled = classification.active && (!isBeta || isPro);
+                      const selected = classificationId === classification.id;
 
-                        return (
-                          <button
-                            key={classification.id}
-                            type="button"
-                            disabled={!enabled}
-                            onClick={() => {
-                              setValue("sportId", sport.id, { shouldValidate: true });
-                              setValue("classificationId", classification.id, {
-                                shouldValidate: true,
-                              });
-                            }}
-                            className={cn(
-                              "rounded-md border px-4 py-3 text-left text-sm transition-colors",
-                              selected && enabled
-                                ? "border-primary bg-primary/10 text-primary"
-                                : enabled
-                                  ? "hover:border-primary/40 hover:bg-muted/50"
-                                  : "cursor-not-allowed opacity-50",
-                            )}
-                          >
-                            <span className="font-medium">{classification.name}</span>
-                            {!enabled && (
-                              <span className="mt-1 block text-xs text-muted-foreground">
-                                Coming soon
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                      return (
+                        <button
+                          key={classification.id}
+                          type="button"
+                          disabled={!enabled}
+                          onClick={() => {
+                            setValue("sportId", sport.id, { shouldValidate: true });
+                            setValue("classificationId", classification.id, {
+                              shouldValidate: true,
+                            });
+                          }}
+                          className={cn(
+                            "rounded-md border px-4 py-3 text-left text-sm transition-colors",
+                            selected && enabled
+                              ? "border-primary bg-primary/10 text-primary"
+                              : enabled
+                                ? "hover:border-primary/40 hover:bg-muted/50"
+                                : "cursor-not-allowed opacity-50",
+                          )}
+                        >
+                          <span className="flex items-center gap-2 font-medium">
+                            {classification.name}
+                            {isBeta && <ProBadge className="px-1.5 py-0 text-[10px]" />}
+                          </span>
+                          {!enabled && (
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {isBeta ? "Pro only" : "Coming soon"}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
             {(errors.sportId || errors.classificationId) && (
               <p className="text-sm text-destructive">Please select a sport and classification.</p>
@@ -331,13 +343,20 @@ function CreateLeaguePage() {
               id="maxMembers"
               type="range"
               min={2}
-              max={FREE_TIER_MAX_MEMBERS}
+              max={maxMembersLimit}
               {...register("maxMembers", { valueAsNumber: true })}
               className="w-full"
             />
             <p className="text-sm text-muted-foreground">
-              Free tier allows 2–{FREE_TIER_MAX_MEMBERS} members per league.
+              {isPro
+                ? `Pro allows 2–${PRO_TIER_MAX_MEMBERS} members per league.`
+                : `Free tier allows 2–${FREE_TIER_MAX_MEMBERS} members.`}
             </p>
+            {!isPro && (
+              <Link to="/settings/billing" className="text-sm font-medium text-primary hover:underline">
+                Upgrade to Pro for up to {PRO_TIER_MAX_MEMBERS} members
+              </Link>
+            )}
             {errors.maxMembers && (
               <p className="text-sm text-destructive">{errors.maxMembers.message}</p>
             )}

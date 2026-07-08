@@ -116,8 +116,10 @@ export {
   tiePolicySchema,
   waitlistEntrySchema,
   waitlistResponseSchema,
+  upgradeRequiredErrorSchema,
   FREE_TIER_MAX_LEAGUES,
   FREE_TIER_MAX_MEMBERS,
+  PRO_TIER_MAX_MEMBERS,
   SEASON_ARCHIVE_BUFFER_DAYS,
   COMMISSIONER_TRANSFER_EXPIRY_DAYS,
   startSeasonSchema,
@@ -149,6 +151,19 @@ export {
   type SeasonStatus,
   type SportWithClassifications,
   type TiePolicy,
+  type UpgradeRequiredError,
   type WaitlistEntry,
   type WaitlistResponse,
 } from "./leagues.js";
+
+export {
+  FREE_PLAN_SLUG,
+  PRO_PLAN_SLUG,
+  UPGRADE_URL,
+  getMaxCreatedLeaguesForPlan,
+  getMaxMembersForPlan,
+  userBillingSchema,
+  userPlanSchema,
+  type UserBilling,
+  type UserPlan,
+} from "./billing.js";

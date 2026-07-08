@@ -85,6 +85,13 @@ enum Theme {
   @@map("theme")
 }
 
+enum UserPlan {
+  free
+  pro
+
+  @@map("user_plan")
+}
+
 enum PickedTeam {
   home
   away
@@ -197,6 +204,8 @@ model User {
   username        String
   avatarUrl       String?   @map("avatar_url")
   emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  plan            UserPlan  @default(free)
+  proSince        DateTime? @map("pro_since") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)

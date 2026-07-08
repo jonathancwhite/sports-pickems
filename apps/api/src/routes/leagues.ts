@@ -13,6 +13,7 @@ import {
 import {
   browsePublicLeagues,
   createLeague,
+  getActiveCreatedLeagueCount,
   getInvitePreview,
   getLeagueDetail,
   getMyLeagues,
@@ -22,6 +23,8 @@ import {
   LeagueServiceError,
   removeMember,
 } from "../services/leagues.js";
+import { getUserPlan } from "../services/billing.js";
+import type { NextFunction, Response } from "express";
 import { getWaitlist, joinWaitlist, leaveWaitlist } from "../services/waitlist.js";
 import {
   getPickSummary,
@@ -52,6 +55,39 @@ import {
 
 export const leaguesRouter = Router();
 
+function handleLeagueServiceError(error: unknown, res: Response, next: NextFunction) {
+  if (error instanceof LeagueServiceError) {
+    const body: Record<string, unknown> = {
+      error: error.code ?? "league_error",
+      message: error.message,
+      ...error.details,
+    };
+    if (error.code === "UPGRADE_REQUIRED") {
+      body.code = "UPGRADE_REQUIRED";
+      body.upgradeUrl = error.details?.upgradeUrl ?? "/settings/billing";
+    }
+    res.status(error.status).json(body);
+    return;
+  }
+
+  next(error);
+}
+
+leaguesRouter.get("/me/created-count", async (req, res, next) => {
+  try {
+    const { userId: clerkId } = getAuth(req);
+    if (!clerkId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const count = await getActiveCreatedLeagueCount(clerkId);
+    res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+});
+
 leaguesRouter.get("/public", async (req, res, next) => {
   try {
     const parsed = publicLeaguesQuerySchema.safeParse(req.query);
@@ -69,7 +105,7 @@ leaguesRouter.get("/public", async (req, res, next) => {
 
 leaguesRouter.post("/", async (req, res, next) => {
   try {
-    const { userId: clerkId } = getAuth(req);
+    const { userId: clerkId, has } = getAuth(req);
     if (!clerkId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -81,18 +117,11 @@ leaguesRouter.post("/", async (req, res, next) => {
       return;
     }
 
-    const league = await createLeague(clerkId, parsed.data);
+    const plan = await getUserPlan(clerkId, has);
+    const league = await createLeague(clerkId, parsed.data, plan);
     res.status(201).json(league);
   } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-        ...error.details,
-      });
-      return;
-    }
-    next(error);
+    handleLeagueServiceError(error, res, next);
   }
 });
 
@@ -665,7 +694,7 @@ leaguesRouter.get("/:id/settings", async (req, res, next) => {
 
 leaguesRouter.patch("/:id", async (req, res, next) => {
   try {
-    const { userId: clerkId } = getAuth(req);
+    const { userId: clerkId, has } = getAuth(req);
     if (!clerkId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -677,17 +706,11 @@ leaguesRouter.patch("/:id", async (req, res, next) => {
       return;
     }
 
-    const league = await updateLeague(clerkId, req.params.id, parsed.data);
+    const plan = await getUserPlan(clerkId, has);
+    const league = await updateLeague(clerkId, req.params.id, parsed.data, plan);
     res.json(league);
   } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
+    handleLeagueServiceError(error, res, next);
   }
 });
 
