@@ -5,14 +5,7 @@ import {
   sendSlateChangeEmail,
 } from "@callsheet/email";
 import { getApplicablePickReminders } from "./reminder-windows.js";
-
-function getWebBaseUrl(): string {
-  return (process.env.WEB_URL ?? "http://localhost:5173").replace(/\/$/, "");
-}
-
-function getPicksUrl(leagueId: string): string {
-  return `${getWebBaseUrl()}/leagues/${leagueId}/picks`;
-}
+import { getPicksUrl } from "./web-url.js";
 
 function isGameStarted(game: { startTime: Date; status: string }): boolean {
   if (game.status === "in_progress" || game.status === "final") {
@@ -37,22 +30,10 @@ async function trySendNotification(
   referenceId: string,
   sendFn: () => Promise<void>,
 ): Promise<boolean> {
-  const existing = await prisma.notificationLog.findFirst({
-    where: {
-      userId: user.id,
-      leagueId,
-      type,
-      referenceId,
-    },
-  });
-
-  if (existing) {
-    return false;
-  }
+  let logId: string | null = null;
 
   try {
-    await sendFn();
-    await prisma.notificationLog.create({
+    const log = await prisma.notificationLog.create({
       data: {
         userId: user.id,
         leagueId,
@@ -60,10 +41,24 @@ async function trySendNotification(
         referenceId,
       },
     });
-    return true;
+    logId = log.id;
   } catch (error) {
     if (isPrismaUniqueViolation(error)) {
       return false;
+    }
+    throw error;
+  }
+
+  try {
+    await sendFn();
+    return true;
+  } catch (error) {
+    if (logId) {
+      await prisma.notificationLog
+        .delete({ where: { id: logId } })
+        .catch((deleteError) => {
+          console.error(`Failed to roll back notification log ${logId}:`, deleteError);
+        });
     }
     console.error(`Failed to send ${type} to ${user.email}:`, error);
     return false;
@@ -124,6 +119,7 @@ export async function runPickReminders(): Promise<{ sent48h: number; sent6h: num
         where: {
           leagueId: league.id,
           seasonId: league.currentSeasonId,
+          user: { deletedAt: null },
         },
         include: {
           user: { select: { id: true, email: true } },

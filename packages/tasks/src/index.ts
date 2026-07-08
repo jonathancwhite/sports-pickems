@@ -1,4 +1,4 @@
-export { getAbsurdApp, initAbsurdQueue, spawnTask, QUEUE_NAME } from "./absurd.js";
+export { getAbsurdApp, ensureAbsurdQueue, initAbsurdQueue, spawnTask, QUEUE_NAME } from "./absurd.js";
 export { registerTasks } from "./register.js";
 export {
   runNotifySlateChange,
