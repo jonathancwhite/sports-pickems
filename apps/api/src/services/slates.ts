@@ -1,5 +1,6 @@
 import { prisma } from "@callsheet/db";
 import type { SlateDetail, SlateListResponse } from "@callsheet/shared";
+import { spawnTask, type SlateChangeParams } from "@callsheet/tasks";
 import { MIN_SLATE_GAMES } from "@callsheet/shared";
 import { LeagueServiceError } from "./leagues.js";
 import { lockPicksForStartedGames } from "./pick-locks.js";
@@ -337,6 +338,39 @@ export async function setSlate(
         .filter((id) => !uniqueGameIds.includes(id))
     : [];
 
+  let slateChangeNotify: SlateChangeParams | null = null;
+
+  if (removedGameIds.length > 0 && existingSlate) {
+    const removedGames = existingSlate.games
+      .filter((entry) => removedGameIds.includes(entry.gameId))
+      .map((entry) => ({
+        id: entry.game.id,
+        homeTeam: entry.game.homeTeam,
+        awayTeam: entry.game.awayTeam,
+      }));
+
+    const affectedPicks = await prisma.pick.findMany({
+      where: {
+        leagueId,
+        gameId: { in: removedGameIds },
+        week,
+      },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+
+    const userIds = affectedPicks.map((pick) => pick.userId);
+    if (userIds.length > 0) {
+      slateChangeNotify = {
+        leagueId,
+        leagueName: league.name,
+        week,
+        removedGames,
+        userIds,
+      };
+    }
+  }
+
   const isFirstSlate =
     (await prisma.leagueWeekSlate.count({
       where: { leagueId, seasonId: season.id },
@@ -407,6 +441,14 @@ export async function setSlate(
       },
     });
   });
+
+  if (slateChangeNotify) {
+    try {
+      await spawnTask("notify-slate-change", slateChangeNotify);
+    } catch (error) {
+      console.error("Failed to spawn notify-slate-change task:", error);
+    }
+  }
 
   return mapSlateDetail(slate, slate.lockedAt, undefined);
 }

@@ -15,9 +15,9 @@ Sports pick'em platform — create leagues, invite friends, compete to predict g
 
 - **Web:** React 19, TypeScript, Vite, TanStack Router, TanStack Query, shadcn/ui (Base UI)
 - **API:** Express, TypeScript, Clerk (Sprint 02)
-- **Worker:** absurd-sdk (Sprint 10)
+- **Worker:** absurd-sdk (`apps/worker` — pick reminders, slate change notifications)
 - **Database:** PostgreSQL (Supabase in prod), Prisma ORM
-- **Email:** Resend (Sprint 10)
+- **Email:** Resend (`packages/email` — pick reminders, slate change, waitlist invites)
 
 ## Local development setup
 

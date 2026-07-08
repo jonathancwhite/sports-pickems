@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { syncGamesRequestSchema } from "@callsheet/shared";
+import { spawnTask } from "@callsheet/tasks";
 import { processExpiredWaitlistInvites } from "../services/waitlist.js";
 import { syncGames, GamesServiceError } from "../services/games.js";
 import { scorePicks } from "../services/scoring.js";
@@ -22,6 +23,16 @@ cronRouter.post("/waitlist-expiry", async (req, res) => {
 
   const processed = await processExpiredWaitlistInvites();
   res.json({ processed });
+});
+
+cronRouter.post("/pick-reminders", async (req, res) => {
+  if (!verifyCronSecret(req)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  await spawnTask("pick-reminders", {});
+  res.json({ spawned: true });
 });
 
 cronRouter.post("/score-picks", async (req, res) => {
