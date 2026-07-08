@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { PRO_TIER_MAX_MEMBERS } from "./billing.js";
 
 export const tiePolicySchema = z.enum(["no_points", "count_as_correct", "half_point"]);
 export type TiePolicy = z.infer<typeof tiePolicySchema>;
@@ -20,7 +19,7 @@ export const createLeagueSchema = z
     classificationId: z.string().uuid(),
     isPublic: z.boolean(),
     password: z.string().min(4).max(100).nullable(),
-    maxMembers: z.number().int().min(2).max(PRO_TIER_MAX_MEMBERS),
+    maxMembers: z.number().int().min(2).max(10),
     tiePolicy: tiePolicySchema,
   })
   .superRefine((data, ctx) => {
@@ -100,24 +99,8 @@ export const leagueSchema = z.object({
 
 export type League = z.infer<typeof leagueSchema>;
 
-export const commissionerTransferSchema = z.object({
-  id: z.string().uuid(),
-  leagueId: z.string().uuid(),
-  fromUserId: z.string().uuid(),
-  fromUsername: z.string(),
-  toUserId: z.string().uuid(),
-  toUsername: z.string(),
-  status: z.enum(["pending", "accepted", "declined", "expired", "cancelled"]),
-  expiresAt: z.string().datetime(),
-  createdAt: z.string().datetime(),
-});
-
-export type CommissionerTransfer = z.infer<typeof commissionerTransferSchema>;
-
 export const leagueDetailSchema = leagueSchema.extend({
   members: z.array(leagueMemberSchema),
-  isCurrentMember: z.boolean().optional(),
-  pendingTransferForUser: commissionerTransferSchema.nullable().optional(),
 });
 
 export type LeagueDetail = z.infer<typeof leagueDetailSchema>;
@@ -153,8 +136,6 @@ export const leagueLimitErrorSchema = z.object({
 });
 
 export type LeagueLimitError = z.infer<typeof leagueLimitErrorSchema>;
-
-export { upgradeRequiredErrorSchema, type UpgradeRequiredError } from "./billing.js";
 
 export const publicLeaguesQuerySchema = z.object({
   sportId: z.string().uuid().optional(),
@@ -213,51 +194,6 @@ export type WaitlistResponse = z.infer<typeof waitlistResponseSchema>;
 
 export const FREE_TIER_MAX_LEAGUES = 2;
 export const FREE_TIER_MAX_MEMBERS = 10;
-export { PRO_TIER_MAX_MEMBERS } from "./billing.js";
-export const SEASON_ARCHIVE_BUFFER_DAYS = 7;
-export const COMMISSIONER_TRANSFER_EXPIRY_DAYS = 7;
-
-export const startSeasonSchema = z.object({
-  year: z.number().int().min(2020).max(2100),
-});
-
-export type StartSeasonInput = z.infer<typeof startSeasonSchema>;
-
-export const updateLeagueSchema = z.object({
-  name: z.string().trim().min(3).max(50).optional(),
-  maxMembers: z.number().int().min(2).max(10).optional(),
-  tiePolicy: tiePolicySchema.optional(),
-});
-
-export type UpdateLeagueInput = z.infer<typeof updateLeagueSchema>;
-
-export const transferCommissionerSchema = z.object({
-  targetUserId: z.string().uuid(),
-});
-
-export type TransferCommissionerInput = z.infer<typeof transferCommissionerSchema>;
-
-export const leagueSeasonSchema = z.object({
-  id: z.string().uuid(),
-  year: z.number().int(),
-  status: seasonStatusSchema,
-  isCurrent: z.boolean(),
-});
-
-export type LeagueSeason = z.infer<typeof leagueSeasonSchema>;
-
-export const leagueSeasonsResponseSchema = z.object({
-  seasons: z.array(leagueSeasonSchema),
-});
-
-export type LeagueSeasonsResponse = z.infer<typeof leagueSeasonsResponseSchema>;
-
-export const leagueSettingsSchema = z.object({
-  pendingTransfer: commissionerTransferSchema.nullable(),
-  pendingTransferForUser: commissionerTransferSchema.nullable().optional(),
-});
-
-export type LeagueSettings = z.infer<typeof leagueSettingsSchema>;
 
 export const TIE_POLICY_OPTIONS = [
   {

@@ -5,15 +5,11 @@ import {
   joinLeagueSchema,
   publicLeaguesQuerySchema,
   setSlateSchema,
-  startSeasonSchema,
   submitPicksSchema,
-  transferCommissionerSchema,
-  updateLeagueSchema,
 } from "@callsheet/shared";
 import {
   browsePublicLeagues,
   createLeague,
-  getActiveCreatedLeagueCount,
   getInvitePreview,
   getLeagueDetail,
   getMyLeagues,
@@ -23,8 +19,6 @@ import {
   LeagueServiceError,
   removeMember,
 } from "../services/leagues.js";
-import { getUserPlan } from "../services/billing.js";
-import type { NextFunction, Response } from "express";
 import { getWaitlist, joinWaitlist, leaveWaitlist } from "../services/waitlist.js";
 import {
   getPickSummary,
@@ -40,53 +34,8 @@ import {
   listSlates,
   setSlate,
 } from "../services/slates.js";
-import {
-  acceptCommissionerTransfer,
-  declineCommissionerTransfer,
-  deleteLeague,
-  getLeagueSettings,
-  getPendingTransferForUser,
-  initiateCommissionerTransfer,
-  joinSeason,
-  listLeagueSeasons,
-  startNewSeason,
-  updateLeague,
-} from "../services/season-lifecycle.js";
 
 export const leaguesRouter = Router();
-
-function handleLeagueServiceError(error: unknown, res: Response, next: NextFunction) {
-  if (error instanceof LeagueServiceError) {
-    const body: Record<string, unknown> = {
-      error: error.code ?? "league_error",
-      message: error.message,
-      ...error.details,
-    };
-    if (error.code === "UPGRADE_REQUIRED") {
-      body.code = "UPGRADE_REQUIRED";
-      body.upgradeUrl = error.details?.upgradeUrl ?? "/settings/billing";
-    }
-    res.status(error.status).json(body);
-    return;
-  }
-
-  next(error);
-}
-
-leaguesRouter.get("/me/created-count", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const count = await getActiveCreatedLeagueCount(clerkId);
-    res.json({ count });
-  } catch (error) {
-    next(error);
-  }
-});
 
 leaguesRouter.get("/public", async (req, res, next) => {
   try {
@@ -105,7 +54,7 @@ leaguesRouter.get("/public", async (req, res, next) => {
 
 leaguesRouter.post("/", async (req, res, next) => {
   try {
-    const { userId: clerkId, has } = getAuth(req);
+    const { userId: clerkId } = getAuth(req);
     if (!clerkId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -117,11 +66,18 @@ leaguesRouter.post("/", async (req, res, next) => {
       return;
     }
 
-    const plan = await getUserPlan(clerkId, has);
-    const league = await createLeague(clerkId, parsed.data, plan);
+    const league = await createLeague(clerkId, parsed.data);
     res.status(201).json(league);
   } catch (error) {
-    handleLeagueServiceError(error, res, next);
+    if (error instanceof LeagueServiceError) {
+      res.status(error.status).json({
+        error: error.code ?? "league_error",
+        message: error.message,
+        ...error.details,
+      });
+      return;
+    }
+    next(error);
   }
 });
 
@@ -454,11 +410,7 @@ leaguesRouter.get("/:id/leaderboard", async (req, res, next) => {
       return;
     }
 
-    const leaderboard = await getSeasonLeaderboard(
-      clerkId,
-      req.params.id,
-      typeof req.query.seasonId === "string" ? req.query.seasonId : undefined,
-    );
+    const leaderboard = await getSeasonLeaderboard(clerkId, req.params.id);
     res.json(leaderboard);
   } catch (error) {
     if (error instanceof LeagueServiceError) {
@@ -486,12 +438,7 @@ leaguesRouter.get("/:id/leaderboard/:week", async (req, res, next) => {
       return;
     }
 
-    const leaderboard = await getWeeklyLeaderboard(
-      clerkId,
-      req.params.id,
-      week,
-      typeof req.query.seasonId === "string" ? req.query.seasonId : undefined,
-    );
+    const leaderboard = await getWeeklyLeaderboard(clerkId, req.params.id, week);
     res.json(leaderboard);
   } catch (error) {
     if (error instanceof LeagueServiceError) {
@@ -585,217 +532,6 @@ leaguesRouter.put("/:id/picks/:week", async (req, res, next) => {
 
     const picks = await submitPicks(clerkId, req.params.id, week, parsed.data);
     res.json(picks);
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.get("/:id/seasons", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const seasons = await listLeagueSeasons(clerkId, req.params.id);
-    res.json(seasons);
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.post("/:id/seasons", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const parsed = startSeasonSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
-      return;
-    }
-
-    const league = await startNewSeason(clerkId, req.params.id, parsed.data);
-    res.status(201).json(league);
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.post("/:id/seasons/join", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const league = await joinSeason(clerkId, req.params.id);
-    res.json(league);
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.get("/:id/settings", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const settings = await getLeagueSettings(clerkId, req.params.id);
-    const pendingTransferForUser = await getPendingTransferForUser(clerkId, req.params.id);
-    res.json({ ...settings, pendingTransferForUser });
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.patch("/:id", async (req, res, next) => {
-  try {
-    const { userId: clerkId, has } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const parsed = updateLeagueSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
-      return;
-    }
-
-    const plan = await getUserPlan(clerkId, has);
-    const league = await updateLeague(clerkId, req.params.id, parsed.data, plan);
-    res.json(league);
-  } catch (error) {
-    handleLeagueServiceError(error, res, next);
-  }
-});
-
-leaguesRouter.delete("/:id", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    await deleteLeague(clerkId, req.params.id);
-    res.status(204).send();
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.post("/:id/transfer", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const parsed = transferCommissionerSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
-      return;
-    }
-
-    const transfer = await initiateCommissionerTransfer(clerkId, req.params.id, parsed.data);
-    res.status(201).json(transfer);
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.post("/:id/transfer/accept", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    const league = await acceptCommissionerTransfer(clerkId, req.params.id);
-    res.json(league);
-  } catch (error) {
-    if (error instanceof LeagueServiceError) {
-      res.status(error.status).json({
-        error: error.code ?? "league_error",
-        message: error.message,
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-leaguesRouter.post("/:id/transfer/decline", async (req, res, next) => {
-  try {
-    const { userId: clerkId } = getAuth(req);
-    if (!clerkId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-
-    await declineCommissionerTransfer(clerkId, req.params.id);
-    res.status(204).send();
   } catch (error) {
     if (error instanceof LeagueServiceError) {
       res.status(error.status).json({

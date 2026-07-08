@@ -6,7 +6,7 @@ import { LeagueNav } from "@/components/league-nav";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { WeekSelector } from "@/components/week-selector";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useLeague, useLeagueSeasons } from "@/hooks/use-leagues";
+import { useLeague } from "@/hooks/use-leagues";
 import {
   useLeaderboard,
   useSelectedWeek,
@@ -23,23 +23,14 @@ function LeaderboardPage() {
   const { leagueId } = Route.useParams();
   const { data: currentUser } = useCurrentUser();
   const { data: league, isPending: leaguePending } = useLeague(leagueId);
-  const { data: seasonsData } = useLeagueSeasons(leagueId, Boolean(league));
   const { data: slates } = useSlates(leagueId);
   const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
   const [view, setView] = useState<"weekly" | "season">("weekly");
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>(undefined);
-
-  const activeSeasonId = selectedSeasonId ?? league?.season?.id;
-  const selectedSeason = seasonsData?.seasons.find((season) => season.id === activeSeasonId);
-  const isHistoricalSeason = selectedSeason && !selectedSeason.isCurrent;
-  const isReadOnlySeason =
-    isHistoricalSeason || selectedSeason?.status === "completed" || league?.status === "archived";
 
   const weekForQuery = view === "weekly" ? selectedWeek : undefined;
   const { data: leaderboard, isPending: leaderboardPending } = useLeaderboard(
     leagueId,
     weekForQuery,
-    { seasonId: activeSeasonId },
   );
 
   if (leaguePending) {
@@ -75,34 +66,6 @@ function LeaderboardPage() {
         isCommissioner={league.isCommissioner}
         active="leaderboard"
       />
-
-      {(seasonsData?.seasons.length ?? 0) > 1 && (
-        <label className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-3">
-          <span className="font-medium text-muted-foreground">Season</span>
-          <select
-            value={activeSeasonId ?? ""}
-            onChange={(event) =>
-              setSelectedSeasonId(
-                event.target.value === league.season?.id ? undefined : event.target.value,
-              )
-            }
-            className="rounded-md border bg-background px-3 py-2"
-          >
-            {seasonsData?.seasons.map((season) => (
-              <option key={season.id} value={season.id}>
-                {season.year}
-                {season.isCurrent ? " (current)" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      {isReadOnlySeason && (
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
-          Season complete — viewing final standings (read-only)
-        </div>
-      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="inline-flex rounded-lg border p-1">

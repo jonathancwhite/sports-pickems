@@ -10,16 +10,14 @@ Sports pick'em platform — create leagues, invite friends, compete to predict g
 |-----|-------------|
 | [Architecture & Decisions](docs/DECISIONS.md) | Product and technical decisions |
 | [Sprint Plans](plans/README.md) | Build roadmap (13 sprints) |
-| [Smoke Test Checklist](docs/SMOKE_TEST.md) | Pre-launch verification steps |
 
 ## Stack
 
-- **Web:** React 19, TypeScript, Vite, TanStack Router, TanStack Query, Tailwind CSS
-- **API:** Express, TypeScript, Clerk (auth + billing)
-- **Worker:** absurd-sdk (`apps/worker` — pick reminders, slate change notifications)
+- **Web:** React 19, TypeScript, Vite, TanStack Router, TanStack Query, shadcn/ui (Base UI)
+- **API:** Express, TypeScript, Clerk (Sprint 02)
+- **Worker:** absurd-sdk (Sprint 10)
 - **Database:** PostgreSQL (Supabase in prod), Prisma ORM
-- **Email:** Resend (`packages/email` — pick reminders, slate change, waitlist invites)
-- **Deploy:** Netlify (web), Fly.io (API + worker)
+- **Email:** Resend (Sprint 10)
 
 ## Local development setup
 
@@ -41,7 +39,7 @@ pnpm install
 cp .env.example .env
 ```
 
-Edit `.env` with your Clerk keys and database URL. For local Postgres via Docker:
+Edit `.env` as needed. For local Postgres via Docker:
 
 ```
 DATABASE_URL=postgresql://callsheet:callsheet@localhost:5432/callsheet
@@ -59,12 +57,6 @@ docker compose up -d
 ```bash
 pnpm db:migrate
 pnpm db:seed
-```
-
-For production catalog-only seed (no test games):
-
-```bash
-pnpm --filter @callsheet/db db:seed:catalog
 ```
 
 ### 5. Start dev servers
@@ -88,7 +80,6 @@ packages/
   db/        → Prisma schema & migrations
   shared/    → Zod schemas & constants
   email/     → Resend templates
-  tasks/     → Shared background task logic
 ```
 
 ## Scripts
@@ -99,73 +90,20 @@ packages/
 | `pnpm build` | Build all packages |
 | `pnpm typecheck` | TypeScript check |
 | `pnpm lint` | ESLint |
-| `pnpm test` | Run unit tests |
 | `pnpm db:generate` | Generate Prisma client |
 | `pnpm db:migrate` | Apply Prisma migrations |
-| `pnpm db:seed` | Seed sports, classifications, and sample games |
-
-## Deployment
-
-### Web (Netlify)
-
-The repo includes `netlify.toml` with build settings. Connect the repo in Netlify and set environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_URL` | Production API URL (e.g. `https://callsheet-api.fly.dev`) |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
-| `VITE_APP_URL` | Production web URL |
-| `VITE_APP_NAME` | `Callsheet` |
-
-### API (Fly.io)
-
-```bash
-fly apps create callsheet-api
-fly secrets set DATABASE_URL=... CLERK_SECRET_KEY=... CLERK_WEBHOOK_SECRET=... CRON_SECRET=... WEB_URL=... RESEND_API_KEY=... EMAIL_FROM=...
-fly deploy --config fly.api.toml
-```
-
-Migrations run automatically via the `release_command` in `fly.api.toml`.
-
-Use the Supabase **pooler** URL (port 6543) for `DATABASE_URL` in production.
-
-### Worker (Fly.io)
-
-```bash
-fly apps create callsheet-worker
-fly secrets set DATABASE_URL=... RESEND_API_KEY=... EMAIL_FROM=... WEB_URL=...
-fly deploy --config fly.worker.toml
-```
-
-### Database rollback
-
-Prisma does not auto-generate down migrations. To roll back:
-
-1. Restore a database snapshot (recommended for production)
-2. Or manually write a reverse migration and apply with `prisma migrate deploy`
-
-Never edit applied migration files in place.
-
-## GitHub Actions secrets
-
-| Secret | Used by | Description |
-|--------|---------|-------------|
-| `API_URL` | Cron workflows | Production API base URL |
-| `CRON_SECRET` | Cron workflows + API | Shared secret for `POST /api/cron/*` |
-
-Cron workflows: `sync-games.yml`, `pick-reminders.yml`, `season-archive.yml`, `waitlist-expiry.yml`
-
-## Clerk Billing setup
-
-Enable Billing in the [Clerk Dashboard](https://dashboard.clerk.com) and create User plans:
-
-| Plan | Slug | Features |
-|------|------|----------|
-| Free | `free` | Default for all users |
-| Pro | `pro` | `unlimited_leagues`, `large_leagues`, `beta_sports`, `no_ads` |
-
-Configure the `subscription.*` webhook events to point at `/api/webhooks/clerk`.
+| `pnpm db:seed` | Seed sports, classifications, and games |
+| `pnpm test` | Run unit tests |
 
 ## Status
 
-**Sprints 12–13 complete** — Clerk Billing monetization, Pro gating, Netlify + Fly.io deploy configs, CI pipeline.
+**Sprint 06 complete** — ESPN game data pipeline, sync cron, games API.
+
+## GitHub Actions secrets
+
+For scheduled game sync (`.github/workflows/sync-games.yml`):
+
+| Secret | Description |
+|--------|-------------|
+| `API_URL` | Production API base URL (e.g. `https://api.callsheet.app`) |
+| `CRON_SECRET` | Shared secret for `POST /api/cron/*` endpoints (must match API env) |
