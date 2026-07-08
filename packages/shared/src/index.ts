@@ -44,10 +44,12 @@ export {
   ESPN_FBS_GROUP_ID,
   fetchFbsRegularSeasonWeeks,
   fetchFbsScoreboard,
+  getEspnEventMappingError,
   mapEspnEventToGame,
   mapEspnScoreboardToGames,
   mapEspnStatus,
   type MappedGame,
+  type MapEspnScoreboardResult,
 } from "./sports/espn/cfb-fbs.js";
 
 export { EspnApiError } from "./sports/espn/client.js";

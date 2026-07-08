@@ -54,10 +54,14 @@ export async function seed() {
 
   for (const week of SEED_WEEKS) {
     try {
-      const mappedGames = await fetchFbsScoreboard({
+      const { games: mappedGames, errors: mappingErrors } = await fetchFbsScoreboard({
         season: SEED_SEASON_YEAR,
         week,
       });
+
+      for (const mappingError of mappingErrors) {
+        errors.push(`Week ${week}, ${mappingError}`);
+      }
 
       for (const mapped of mappedGames) {
         await prisma.game.upsert({

@@ -85,9 +85,33 @@ describe("mapEspnEventToGame", () => {
 
 describe("mapEspnScoreboardToGames", () => {
   it("maps all events from a scoreboard", () => {
-    const games = mapEspnScoreboardToGames(mockEspnScoreboard, 1);
-    expect(games).toHaveLength(2);
-    expect(games[0]?.externalId).toBe("401856766");
-    expect(games[1]?.externalId).toBe("401999001");
+    const result = mapEspnScoreboardToGames(mockEspnScoreboard, 1);
+    expect(result.games).toHaveLength(2);
+    expect(result.errors).toHaveLength(0);
+    expect(result.games[0]?.externalId).toBe("401856766");
+    expect(result.games[1]?.externalId).toBe("401999001");
+  });
+
+  it("reports errors for unmapped events", () => {
+    const result = mapEspnScoreboardToGames(
+      {
+        ...mockEspnScoreboard,
+        events: [
+          ...mockEspnScoreboard.events,
+          {
+            id: "401999999",
+            date: "2026-01-01T00:00:00.000Z",
+            name: "Invalid Game",
+            competitions: [],
+          },
+        ],
+      },
+      1,
+    );
+
+    expect(result.games).toHaveLength(2);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain("401999999");
+    expect(result.errors[0]).toContain("missing competition");
   });
 });

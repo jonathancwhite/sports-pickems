@@ -82,16 +82,14 @@ function parseScore(score: string | undefined, status: GameStatus): number | nul
 }
 
 export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame | null {
-  const competition = event.competitions[0];
-  if (!competition) {
+  const mappingError = getEspnEventMappingError(event);
+  if (mappingError) {
     return null;
   }
 
-  const home = competition.competitors.find((c) => c.homeAway === "home");
-  const away = competition.competitors.find((c) => c.homeAway === "away");
-  if (!home || !away) {
-    return null;
-  }
+  const competition = event.competitions[0]!;
+  const home = competition.competitors.find((c) => c.homeAway === "home")!;
+  const away = competition.competitors.find((c) => c.homeAway === "away")!;
 
   const status = mapEspnStatus(
     competition.status.type.name,
@@ -116,13 +114,45 @@ export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame |
   };
 }
 
+export function getEspnEventMappingError(event: EspnEvent): string | null {
+  const competition = event.competitions[0];
+  if (!competition) {
+    return `Event ${event.id} (${event.name}): missing competition`;
+  }
+
+  const home = competition.competitors.find((c) => c.homeAway === "home");
+  const away = competition.competitors.find((c) => c.homeAway === "away");
+  if (!home || !away) {
+    return `Event ${event.id} (${event.name}): missing home or away team`;
+  }
+
+  return null;
+}
+
+export interface MapEspnScoreboardResult {
+  games: MappedGame[];
+  errors: string[];
+}
+
 export function mapEspnScoreboardToGames(
   scoreboard: EspnScoreboard,
   week: number,
-): MappedGame[] {
-  return scoreboard.events
-    .map((event) => mapEspnEventToGame(event, week))
-    .filter((game): game is MappedGame => game !== null);
+): MapEspnScoreboardResult {
+  const games: MappedGame[] = [];
+  const errors: string[] = [];
+
+  for (const event of scoreboard.events) {
+    const mapped = mapEspnEventToGame(event, week);
+    if (mapped) {
+      games.push(mapped);
+      continue;
+    }
+
+    const mappingError = getEspnEventMappingError(event);
+    errors.push(mappingError ?? `Event ${event.id} (${event.name}): failed to map`);
+  }
+
+  return { games, errors };
 }
 
 export interface FetchFbsScoreboardParams {
@@ -134,7 +164,7 @@ export interface FetchFbsScoreboardParams {
 export async function fetchFbsScoreboard(
   params: FetchFbsScoreboardParams,
   options: EspnFetchOptions = {},
-): Promise<MappedGame[]> {
+): Promise<MapEspnScoreboardResult> {
   const scoreboard = await espnFetch<EspnScoreboard>(
     "/sports/football/college-football/scoreboard",
     {

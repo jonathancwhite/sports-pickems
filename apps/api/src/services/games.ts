@@ -231,7 +231,14 @@ async function runSyncGames(input: SyncGamesRequest): Promise<SyncGamesResponse>
 
   for (const week of weeks) {
     try {
-      const mappedGames = await fetchFbsScoreboard({ season: seasonYear, week });
+      const { games: mappedGames, errors: mappingErrors } = await fetchFbsScoreboard({
+        season: seasonYear,
+        week,
+      });
+
+      for (const mappingError of mappingErrors) {
+        errors.push(`Week ${week}, ${mappingError}`);
+      }
 
       for (const mapped of mappedGames) {
         try {
