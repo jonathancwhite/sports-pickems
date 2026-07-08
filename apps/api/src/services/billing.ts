@@ -61,6 +61,15 @@ export async function getUserPlan(clerkId: string, has?: HasFunction): Promise<U
     return "pro";
   }
 
+  if (has) {
+    const cached = await getCachedUserPlan(clerkId);
+    if (cached === "pro") {
+      await refreshUserPlanFromClerk(clerkId);
+      return getCachedUserPlan(clerkId);
+    }
+    return "free";
+  }
+
   return getCachedUserPlan(clerkId);
 }
 
@@ -72,7 +81,7 @@ export async function updateCachedUserPlan(
   const now = new Date();
 
   await prisma.user.updateMany({
-    where: { clerkId },
+    where: { clerkId, deletedAt: null },
     data: {
       plan,
       proSince: plan === "pro" ? (proSince ?? now) : null,

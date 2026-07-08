@@ -47,4 +47,29 @@ describe("assignLeaderboardRanks", () => {
 
     expect(ranked.map((entry) => entry.rank)).toEqual([1, 1, 3]);
   });
+
+  it("breaks ties on username when points and correct match", () => {
+    const ranked = assignLeaderboardRanks([
+      { username: "bob", points: 2, correct: 2 },
+      { username: "alice", points: 2, correct: 2 },
+    ]);
+
+    expect(ranked[0]?.username).toBe("alice");
+    expect(ranked[1]?.username).toBe("bob");
+    expect(ranked.map((entry) => entry.rank)).toEqual([1, 1]);
+  });
+
+  it("returns empty array for no entries", () => {
+    expect(assignLeaderboardRanks([])).toEqual([]);
+  });
+});
+
+describe("computePickPoints edge cases", () => {
+  it("awards 0 points for tie games under no_points even if marked correct", () => {
+    expect(computePickPoints(false, "tie", "no_points")).toBe(0);
+  });
+
+  it("returns 0 when isCorrect is false regardless of winner", () => {
+    expect(computePickPoints(false, null, "no_points")).toBe(0);
+  });
 });

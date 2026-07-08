@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { syncGamesRequestSchema } from "@callsheet/shared";
 import { spawnTask } from "@callsheet/tasks";
+import { requireCronAuth } from "../lib/cron-auth.js";
 import { processExpiredWaitlistInvites } from "../services/waitlist.js";
 import { syncGames, GamesServiceError } from "../services/games.js";
 import { scorePicks } from "../services/scoring.js";
@@ -9,73 +10,39 @@ import {
   processSeasonArchiving,
 } from "../services/season-lifecycle.js";
 
+export { verifyCronSecret } from "../lib/cron-auth.js";
+
 export const cronRouter = Router();
 
-export function verifyCronSecret(req: { headers: { authorization?: string } }): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    return process.env.NODE_ENV === "development";
-  }
-  return req.headers.authorization === `Bearer ${secret}`;
-}
+cronRouter.use(requireCronAuth);
 
-cronRouter.post("/waitlist-expiry", async (req, res) => {
-  if (!verifyCronSecret(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+cronRouter.post("/waitlist-expiry", async (_req, res) => {
   const processed = await processExpiredWaitlistInvites();
   res.json({ processed });
 });
 
-cronRouter.post("/pick-reminders", async (req, res) => {
-  if (!verifyCronSecret(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+cronRouter.post("/pick-reminders", async (_req, res) => {
   await spawnTask("pick-reminders", {});
   res.json({ spawned: true });
 });
 
-cronRouter.post("/score-picks", async (req, res) => {
-  if (!verifyCronSecret(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+cronRouter.post("/score-picks", async (_req, res) => {
   const result = await scorePicks();
   res.json(result);
 });
 
-cronRouter.post("/season-archive", async (req, res) => {
-  if (!verifyCronSecret(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+cronRouter.post("/season-archive", async (_req, res) => {
   const archiving = await processSeasonArchiving();
   const transfers = await processExpiredCommissionerTransfers();
   res.json({ ...archiving, transfersExpired: transfers });
 });
 
-cronRouter.post("/transfer-expiry", async (req, res) => {
-  if (!verifyCronSecret(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+cronRouter.post("/transfer-expiry", async (_req, res) => {
   const processed = await processExpiredCommissionerTransfers();
   res.json({ processed });
 });
 
 cronRouter.post("/sync-games", async (req, res, next) => {
-  if (!verifyCronSecret(req)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
   try {
     const parsed = syncGamesRequestSchema.safeParse(req.body ?? {});
     if (!parsed.success) {

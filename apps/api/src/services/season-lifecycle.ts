@@ -11,6 +11,7 @@ import type {
 } from "@callsheet/shared";
 import {
   COMMISSIONER_TRANSFER_EXPIRY_DAYS,
+  isSeasonCompletionTerminalStatus,
   SEASON_ARCHIVE_BUFFER_DAYS,
 } from "@callsheet/shared";
 import { spawnTask } from "@callsheet/tasks";
@@ -126,8 +127,6 @@ export function assertLeagueWritable(league: { status: string }): void {
   }
 }
 
-const TERMINAL_GAME_STATUSES = new Set(["final", "cancelled"]);
-
 export async function checkSeasonCompletion(seasonId: string): Promise<boolean> {
   const season = await prisma.season.findUnique({
     where: { id: seasonId },
@@ -147,7 +146,7 @@ export async function checkSeasonCompletion(seasonId: string): Promise<boolean> 
     return false;
   }
 
-  const allTerminal = games.every((game) => TERMINAL_GAME_STATUSES.has(game.status));
+  const allTerminal = games.every((game) => isSeasonCompletionTerminalStatus(game.status));
   if (!allTerminal) {
     return false;
   }

@@ -337,6 +337,8 @@ export async function getLeagueDetail(
         where: { leagueId, userId: user.id },
       });
 
+  const isHistoricalOnly = !membership && Boolean(historicalMembership);
+
   if (!membership && !historicalMembership) {
     throw new LeagueServiceError("You are not a member of this league", 403);
   }
@@ -377,14 +379,16 @@ export async function getLeagueDetail(
     ...base,
     isCurrentMember: Boolean(membership),
     pendingTransferForUser,
-    members: members.map((member) => ({
-      id: member.id,
-      userId: member.userId,
-      username: member.user.username,
-      avatarUrl: member.user.avatarUrl,
-      role: member.role,
-      joinedAt: member.joinedAt.toISOString(),
-    })),
+    members: isHistoricalOnly
+      ? []
+      : members.map((member) => ({
+          id: member.id,
+          userId: member.userId,
+          username: member.user.username,
+          avatarUrl: member.user.avatarUrl,
+          role: member.role,
+          joinedAt: member.joinedAt.toISOString(),
+        })),
   };
 }
 
@@ -507,27 +511,6 @@ export async function joinLeague(
   });
 
   return mapLeague(updated, { role: "member", isCommissioner: false });
-}
-
-export async function isLeagueCommissioner(
-  clerkId: string,
-  leagueId: string,
-): Promise<boolean> {
-  const user = await findUserByClerkId(clerkId);
-  if (!user) {
-    return false;
-  }
-
-  const membership = await prisma.leagueMember.findFirst({
-    where: {
-      leagueId,
-      userId: user.id,
-      role: "commissioner",
-      league: { deletedAt: null },
-    },
-  });
-
-  return Boolean(membership);
 }
 
 export async function getActiveCreatedLeagueCount(clerkId: string): Promise<number> {

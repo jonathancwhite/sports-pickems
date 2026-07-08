@@ -11,15 +11,38 @@ const RATE_LIMITS: Array<{ method: string; pattern: RegExp; limit: number; windo
   { method: "POST", pattern: /^\/leagues$/, limit: 10, windowMs: 60_000 },
   { method: "POST", pattern: /^\/leagues\/[^/]+\/join$/, limit: 20, windowMs: 60_000 },
   { method: "POST", pattern: /^\/leagues\/invite\/[^/]+\/join$/, limit: 20, windowMs: 60_000 },
+  { method: "GET", pattern: /^\/leagues\/invite\/[^/]+$/, limit: 30, windowMs: 60_000 },
 ];
 
 function getClientKey(req: Request): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length > 0) {
-    return forwarded.split(",")[0]?.trim() ?? req.ip ?? "unknown";
+  return req.ip ?? "unknown";
+}
+
+function applyRateLimit(
+  req: Request,
+  res: Response,
+  rule: { limit: number; windowMs: number },
+  keySuffix: string,
+): boolean {
+  const now = Date.now();
+  const key = `${getClientKey(req)}:${keySuffix}`;
+  const existing = buckets.get(key);
+
+  if (!existing || existing.resetAt <= now) {
+    buckets.set(key, { count: 1, resetAt: now + rule.windowMs });
+    return true;
   }
 
-  return req.ip ?? "unknown";
+  if (existing.count >= rule.limit) {
+    res.status(429).json({
+      error: "rate_limit_exceeded",
+      message: "Too many requests. Please try again shortly.",
+    });
+    return false;
+  }
+
+  existing.count += 1;
+  return true;
 }
 
 export function rateLimitSensitiveRoutes(
@@ -37,24 +60,8 @@ export function rateLimitSensitiveRoutes(
     return;
   }
 
-  const now = Date.now();
-  const key = `${getClientKey(req)}:${req.method}:${path}`;
-  const existing = buckets.get(key);
-
-  if (!existing || existing.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + rule.windowMs });
+  const allowed = applyRateLimit(req, res, rule, `${req.method}:${path}`);
+  if (allowed) {
     next();
-    return;
   }
-
-  if (existing.count >= rule.limit) {
-    res.status(429).json({
-      error: "rate_limit_exceeded",
-      message: "Too many requests. Please try again shortly.",
-    });
-    return;
-  }
-
-  existing.count += 1;
-  next();
 }

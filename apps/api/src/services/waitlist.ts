@@ -316,12 +316,21 @@ export async function getWaitlist(clerkId: string, leagueId: string): Promise<Wa
     throw new LeagueServiceError("User not found", 404, "user_not_synced");
   }
 
+  const league = await prisma.league.findFirst({
+    where: { id: leagueId, deletedAt: null },
+    select: { currentSeasonId: true },
+  });
+
+  if (!league?.currentSeasonId) {
+    throw new LeagueServiceError("League not found", 404);
+  }
+
   const isCommissioner = await prisma.leagueMember.findFirst({
     where: {
       leagueId,
       userId: user.id,
+      seasonId: league.currentSeasonId,
       role: "commissioner",
-      league: { deletedAt: null },
     },
   });
 

@@ -28,6 +28,8 @@ export {
   gameWinnerSchema,
   gamesQuerySchema,
   gamesResponseSchema,
+  isSeasonCompletionTerminalStatus,
+  SEASON_COMPLETION_TERMINAL_STATUSES,
   syncGamesRequestSchema,
   syncGamesResponseSchema,
   type Game,

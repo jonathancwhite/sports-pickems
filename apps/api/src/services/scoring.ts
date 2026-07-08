@@ -1,6 +1,15 @@
 import { prisma } from "@callsheet/db";
 import { computeIsCorrect, type ScorePicksResponse } from "@callsheet/shared";
 
+export async function clearPickScoresForGame(gameId: string): Promise<number> {
+  const result = await prisma.pick.updateMany({
+    where: { gameId, isCorrect: { not: null } },
+    data: { isCorrect: null, updatedAt: new Date() },
+  });
+
+  return result.count;
+}
+
 async function scorePicksForGame(gameId: string): Promise<number> {
   const game = await prisma.game.findUnique({
     where: { id: gameId },
