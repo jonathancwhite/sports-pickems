@@ -8,14 +8,9 @@ import type {
   PublicLeaguesQuery,
   PublicLeaguesResponse,
 } from "@callsheet/shared";
+import { FREE_TIER_MAX_LEAGUES } from "@callsheet/shared";
 import bcrypt from "bcryptjs";
 import { customAlphabet } from "nanoid";
-import {
-  assertClassificationAllowed,
-  assertLeagueCreationAllowed,
-  assertMaxMembersAllowed,
-  type UserPlan,
-} from "./billing.js";
 import {
   clearUserWaitlistEntry,
   isSeasonLocked,
@@ -102,10 +97,8 @@ async function countActiveCreatedLeagues(
   return tx.league.count({
     where: {
       commissionerId: userId,
-      OR: [
-        { deletedAt: null, status: { not: "archived" } },
-        { deletedAt: { not: null }, countsTowardLimit: true },
-      ],
+      deletedAt: null,
+      status: { not: "archived" },
     },
   });
 }
@@ -118,7 +111,7 @@ type LockedLeagueRow = {
   status: "setup" | "active" | "archived";
 };
 
-export async function lockLeagueForUpdate(
+async function lockLeagueForUpdate(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   leagueId: string,
 ): Promise<LockedLeagueRow | null> {
@@ -175,7 +168,6 @@ export class LeagueServiceError extends Error {
 export async function createLeague(
   clerkId: string,
   input: CreateLeagueInput,
-  plan: UserPlan,
 ): Promise<League> {
   const user = await findUserByClerkId(clerkId);
   if (!user) {
@@ -183,8 +175,14 @@ export async function createLeague(
   }
 
   const activeLeagueCount = await countActiveCreatedLeagues(user.id);
-  assertLeagueCreationAllowed(plan, activeLeagueCount);
-  assertMaxMembersAllowed(plan, input.maxMembers);
+  if (activeLeagueCount >= FREE_TIER_MAX_LEAGUES) {
+    throw new LeagueServiceError(
+      "Free accounts can create up to 2 active leagues. Upgrade to Pro for unlimited leagues.",
+      403,
+      "league_limit_reached",
+      { limit: FREE_TIER_MAX_LEAGUES },
+    );
+  }
 
   const classification = await prisma.classification.findFirst({
     where: {
@@ -199,8 +197,6 @@ export async function createLeague(
     throw new LeagueServiceError("Invalid sport or classification", 400);
   }
 
-  assertClassificationAllowed(plan, classification.tier);
-
   const inviteCode = await generateUniqueInviteCode();
   const currentYear = new Date().getFullYear();
   const season = await getOrCreateSeason(input.classificationId, currentYear);
@@ -214,7 +210,14 @@ export async function createLeague(
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id}))`;
 
     const lockedCount = await countActiveCreatedLeagues(user.id, tx);
-    assertLeagueCreationAllowed(plan, lockedCount);
+    if (lockedCount >= FREE_TIER_MAX_LEAGUES) {
+      throw new LeagueServiceError(
+        "Free accounts can create up to 2 active leagues. Upgrade to Pro for unlimited leagues.",
+        403,
+        "league_limit_reached",
+        { limit: FREE_TIER_MAX_LEAGUES },
+      );
+    }
 
     const created = await tx.league.create({
       data: {
@@ -270,10 +273,6 @@ export async function getMyLeagues(clerkId: string): Promise<MyLeaguesResponse> 
   const joined: League[] = [];
 
   for (const membership of memberships) {
-    if (membership.seasonId !== membership.league.currentSeasonId) {
-      continue;
-    }
-
     if (seen.has(membership.leagueId)) {
       continue;
     }
@@ -305,79 +304,36 @@ export async function getLeagueDetail(
 
   const league = await prisma.league.findFirst({
     where: { id: leagueId, deletedAt: null },
-    include: leagueInclude,
+    include: {
+      ...leagueInclude,
+      members: {
+        include: {
+          user: {
+            select: { id: true, username: true, avatarUrl: true },
+          },
+        },
+        orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
+      },
+    },
   });
 
   if (!league) {
     throw new LeagueServiceError("League not found", 404);
   }
 
-  if (!league.currentSeasonId) {
-    throw new LeagueServiceError("League season not configured", 500);
-  }
-
-  const members = await prisma.leagueMember.findMany({
-    where: {
-      leagueId,
-      seasonId: league.currentSeasonId,
-    },
-    include: {
-      user: {
-        select: { id: true, username: true, avatarUrl: true },
-      },
-    },
-    orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
-  });
-
-  const membership = members.find((member) => member.userId === user.id);
-
-  const historicalMembership = membership
-    ? null
-    : await prisma.leagueMember.findFirst({
-        where: { leagueId, userId: user.id },
-      });
-
-  if (!membership && !historicalMembership) {
+  const membership = league.members.find((member) => member.userId === user.id);
+  if (!membership) {
     throw new LeagueServiceError("You are not a member of this league", 403);
   }
 
   const base = mapLeague(league, {
-    role: membership?.role ?? "member",
-    isCommissioner: membership?.role === "commissioner",
+    role: membership.role,
+    isCommissioner: membership.role === "commissioner",
   });
-
-  const pendingTransfer = await prisma.commissionerTransfer.findFirst({
-    where: {
-      leagueId,
-      toUserId: user.id,
-      status: "pending",
-      expiresAt: { gt: new Date() },
-    },
-    include: {
-      fromUser: { select: { username: true } },
-      toUser: { select: { username: true } },
-    },
-  });
-
-  const pendingTransferForUser = pendingTransfer
-    ? {
-        id: pendingTransfer.id,
-        leagueId: pendingTransfer.leagueId,
-        fromUserId: pendingTransfer.fromUserId,
-        fromUsername: pendingTransfer.fromUser.username,
-        toUserId: pendingTransfer.toUserId,
-        toUsername: pendingTransfer.toUser.username,
-        status: pendingTransfer.status,
-        expiresAt: pendingTransfer.expiresAt.toISOString(),
-        createdAt: pendingTransfer.createdAt.toISOString(),
-      }
-    : null;
 
   return {
     ...base,
-    isCurrentMember: Boolean(membership),
-    pendingTransferForUser,
-    members: members.map((member) => ({
+    members: league.members.map((member) => ({
       id: member.id,
       userId: member.userId,
       username: member.user.username,

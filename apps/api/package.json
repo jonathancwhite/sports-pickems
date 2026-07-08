@@ -14,8 +14,6 @@
     "@callsheet/db": "workspace:*",
     "@callsheet/email": "workspace:*",
     "@callsheet/shared": "workspace:*",
-    "@callsheet/tasks": "workspace:*",
-    "absurd-sdk": "^0.4.0",
     "@clerk/express": "^2.1.37",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

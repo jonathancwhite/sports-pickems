@@ -4,7 +4,6 @@ import { EmptyState } from "@/components/empty-state";
 import { LeagueSection } from "@/components/league-card";
 import { LeagueListSkeleton } from "@/components/league-list-skeleton";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { UpgradeBanner } from "@/components/upgrade-banner";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMyLeagues } from "@/hooks/use-leagues";
 
@@ -36,8 +35,6 @@ function DashboardPage() {
 
       {user && (
         <>
-          <UpgradeBanner />
-
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
               Welcome, {user.username}

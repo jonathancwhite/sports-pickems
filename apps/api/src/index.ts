@@ -16,8 +16,6 @@ import { sportsRouter } from "./routes/sports.js";
 import { usersRouter } from "./routes/users.js";
 import { clerkWebhookRouter } from "./routes/webhooks/clerk.js";
 import { requireAuthUnlessPublic } from "./middleware/clerk-auth.js";
-import { rateLimitSensitiveRoutes } from "./middleware/rate-limit.js";
-import { logger } from "./lib/logger.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -38,7 +36,6 @@ app.use(
 app.use(express.json());
 app.use(clerkMiddleware());
 app.use("/api", requireAuthUnlessPublic);
-app.use("/api", rateLimitSensitiveRoutes);
 
 app.use("/api", healthRouter);
 app.use("/api/cron", cronRouter);
@@ -52,7 +49,7 @@ app.get("/", (_req, res) => {
 });
 
 app.listen(port, () => {
-  logger.info("API server started", { port });
+  console.log(`API running on http://localhost:${port}`);
 });
 
 export { app };

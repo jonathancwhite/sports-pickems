@@ -16,13 +16,13 @@
 **So that** the app runs correctly in prod
 
 **Acceptance criteria:**
-- [x] Supabase production project created (Pro tier if needed)
-- [x] Clerk production instance configured (custom domain if available)
-- [x] Resend domain verified (`callsheet.app` or staging domain)
-- [x] All secrets documented in `.env.example` with descriptions
-- [x] Production env vars set in Netlify and Fly.io dashboards
-- [x] `CRON_SECRET` set in GitHub Actions secrets
-- [x] CORS configured: production web URL allowed on API
+- [ ] Supabase production project created (Pro tier if needed)
+- [ ] Clerk production instance configured (custom domain if available)
+- [ ] Resend domain verified (`callsheet.app` or staging domain)
+- [ ] All secrets documented in `.env.example` with descriptions
+- [ ] Production env vars set in Netlify and Fly.io dashboards
+- [ ] `CRON_SECRET` set in GitHub Actions secrets
+- [ ] CORS configured: production web URL allowed on API
 
 ---
 
@@ -33,14 +33,14 @@
 **So that** users can access the frontend
 
 **Acceptance criteria:**
-- [x] `netlify.toml` in repo root or `apps/web/`:
+- [ ] `netlify.toml` in repo root or `apps/web/`:
   - Build command: `turbo build --filter=web`
   - Publish directory: `apps/web/dist`
   - SPA redirect: `/* → /index.html` (200)
-- [x] Environment variables set in Netlify dashboard
-- [x] Deploy previews on PR branches
-- [x] Production deploy on push to `v0.2.0` (or `main` when merged)
-- [x] Custom domain configured (or Netlify subdomain for staging)
+- [ ] Environment variables set in Netlify dashboard
+- [ ] Deploy previews on PR branches
+- [ ] Production deploy on push to `v0.2.0` (or `main` when merged)
+- [ ] Custom domain configured (or Netlify subdomain for staging)
 
 ---
 
@@ -51,13 +51,13 @@
 **So that** backend services run in production
 
 **Acceptance criteria:**
-- [x] `fly.toml` for API app
-- [x] `fly.toml` for worker app (or same app, different process group)
-- [x] Dockerfile builds both from monorepo root
-- [x] Health check: `GET /api/health`
-- [x] Auto-deploy on push (GitHub Actions or Fly GitHub integration)
-- [x] Supabase connection via pooler URL (port 6543)
-- [x] Minimum 1 machine (scale to 0 on free tier if acceptable)
+- [ ] `fly.toml` for API app
+- [ ] `fly.toml` for worker app (or same app, different process group)
+- [ ] Dockerfile builds both from monorepo root
+- [ ] Health check: `GET /api/health`
+- [ ] Auto-deploy on push (GitHub Actions or Fly GitHub integration)
+- [ ] Supabase connection via pooler URL (port 6543)
+- [ ] Minimum 1 machine (scale to 0 on free tier if acceptable)
 
 ---
 
@@ -68,14 +68,14 @@
 **So that** broken code doesn't merge
 
 **Acceptance criteria:**
-- [x] `.github/workflows/ci.yml`:
+- [ ] `.github/workflows/ci.yml`:
   - Trigger: push to `v0.2.0`, PRs
   - Steps: install, lint, typecheck, test, build
   - Uses pnpm + turbo cache
-- [x] `.github/workflows/sync-games.yml` — from Sprint 06 (production URL)
-- [x] `.github/workflows/pick-reminders.yml` — from Sprint 10 (production URL)
-- [x] All cron workflows use production `API_URL` and `CRON_SECRET` from secrets
-- [x] CI badge in README (optional)
+- [ ] `.github/workflows/sync-games.yml` — from Sprint 06 (production URL)
+- [ ] `.github/workflows/pick-reminders.yml` — from Sprint 10 (production URL)
+- [ ] All cron workflows use production `API_URL` and `CRON_SECRET` from secrets
+- [ ] CI badge in README (optional)
 
 ---
 
@@ -86,10 +86,10 @@
 **So that** schema changes deploy without data loss
 
 **Acceptance criteria:**
-- [x] Migration script: `pnpm --filter db migrate` (Drizzle)
-- [x] Run migrations as part of API deploy (Fly release command) or manual step documented
-- [x] Seed script for production: sports + classifications only (no test data)
-- [x] Rollback strategy documented in README
+- [ ] Migration script: `pnpm --filter db migrate` (Drizzle)
+- [ ] Run migrations as part of API deploy (Fly release command) or manual step documented
+- [ ] Seed script for production: sports + classifications only (no test data)
+- [ ] Rollback strategy documented in README
 
 ---
 
@@ -100,10 +100,10 @@
 **So that** I can diagnose issues quickly
 
 **Acceptance criteria:**
-- [x] Structured JSON logging in API (pino or similar)
+- [ ] Structured JSON logging in API (pino or similar)
 - [ ] Error tracking: Sentry (free tier) or similar — optional but recommended
 - [ ] Frontend error boundary reports to same service
-- [x] No sensitive data (tokens, passwords) in logs
+- [ ] No sensitive data (tokens, passwords) in logs
 
 ---
 
@@ -115,12 +115,12 @@
 
 **Acceptance criteria:**
 - [ ] Lighthouse score: Performance > 80, Accessibility > 90
-- [x] Loading states on all data-fetching pages
-- [x] Empty states on all list pages
-- [x] Mobile responsive on all pages (test 375px width)
-- [x] Favicon and app meta tags (title, description, OG image)
-- [x] `robots.txt` and `sitemap.xml` for landing page SEO
-- [x] 404 page styled consistently
+- [ ] Loading states on all data-fetching pages
+- [ ] Empty states on all list pages
+- [ ] Mobile responsive on all pages (test 375px width)
+- [ ] Favicon and app meta tags (title, description, OG image)
+- [ ] `robots.txt` and `sitemap.xml` for landing page SEO
+- [ ] 404 page styled consistently
 
 ---
 
@@ -131,15 +131,15 @@
 **So that** the project is maintainable
 
 **Acceptance criteria:**
-- [x] README.md:
+- [ ] README.md:
   - Project overview
   - Tech stack summary
   - Local development setup (step by step)
   - Environment variables reference
   - Deployment instructions (Netlify + Fly.io)
   - Link to `docs/DECISIONS.md` and `plans/`
-- [x] `docs/DECISIONS.md` up to date
-- [x] API endpoint summary (can be in README or separate doc)
+- [ ] `docs/DECISIONS.md` up to date
+- [ ] API endpoint summary (can be in README or separate doc)
 
 ---
 
@@ -150,7 +150,7 @@
 **So that** I can verify the full flow works in production
 
 **Acceptance criteria:**
-- [x] Smoke test checklist in `docs/SMOKE_TEST.md`:
+- [ ] Smoke test checklist in `docs/SMOKE_TEST.md`:
   1. Sign up with username
   2. Create league (FBS CFB)
   3. Copy invite link
@@ -175,27 +175,27 @@
 **So that** the app isn't vulnerable to obvious attacks
 
 **Acceptance criteria:**
-- [x] All API routes have appropriate auth (no unprotected mutations)
-- [x] `CRON_SECRET` is strong and not in code
-- [x] Clerk webhook signature verified
-- [x] SQL injection prevented (Drizzle parameterized queries)
-- [x] Rate limiting on auth-sensitive endpoints (Clerk handles sign-up; add on league create/join)
-- [x] CORS restricted to production domain
-- [x] No secrets in client bundle (only `VITE_*` public keys)
-- [x] HTTPS enforced (Netlify + Fly default)
+- [ ] All API routes have appropriate auth (no unprotected mutations)
+- [ ] `CRON_SECRET` is strong and not in code
+- [ ] Clerk webhook signature verified
+- [ ] SQL injection prevented (Drizzle parameterized queries)
+- [ ] Rate limiting on auth-sensitive endpoints (Clerk handles sign-up; add on league create/join)
+- [ ] CORS restricted to production domain
+- [ ] No secrets in client bundle (only `VITE_*` public keys)
+- [ ] HTTPS enforced (Netlify + Fly default)
 
 ---
 
 ## Sprint definition of done
 
-- [x] Web deployed to Netlify and accessible
-- [x] API + worker deployed to Fly.io and healthy
-- [x] CI pipeline green on all checks
-- [x] Cron workflows running against production
+- [ ] Web deployed to Netlify and accessible
+- [ ] API + worker deployed to Fly.io and healthy
+- [ ] CI pipeline green on all checks
+- [ ] Cron workflows running against production
 - [ ] Smoke test checklist passes
-- [x] README complete
-- [x] Security review complete
-- [x] All stories checked off
+- [ ] README complete
+- [ ] Security review complete
+- [ ] All stories checked off
 
 ---
 
