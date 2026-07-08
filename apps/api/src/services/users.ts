@@ -73,60 +73,77 @@ interface ClerkUserData {
 
 function getPrimaryEmail(data: ClerkUserData): {
   email: string;
-  emailVerifiedAt: Date | null;
+  isVerified: boolean;
 } {
   const primary =
     data.email_addresses.find((entry) => entry.id === data.primary_email_address_id) ??
     data.email_addresses[0];
 
   if (!primary) {
-    return { email: "", emailVerifiedAt: null };
+    return { email: "", isVerified: false };
   }
 
-  const verified = primary.verification?.status === "verified";
   return {
     email: primary.email_address,
-    emailVerifiedAt: verified ? new Date() : null,
+    isVerified: primary.verification?.status === "verified",
   };
 }
 
 export async function upsertUserFromClerk(data: ClerkUserData): Promise<void> {
   const db = getDb();
-  const { email, emailVerifiedAt } = getPrimaryEmail(data);
+  const { email, isVerified } = getPrimaryEmail(data);
   const username = data.username ?? data.id;
   const now = new Date();
 
-  const [user] = await db
-    .insert(users)
-    .values({
-      clerkId: data.id,
-      email,
-      username,
-      avatarUrl: data.image_url,
-      emailVerifiedAt,
-      deletedAt: null,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: users.clerkId,
-      set: {
+  const existing = await db
+    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt })
+    .from(users)
+    .where(eq(users.clerkId, data.id))
+    .limit(1);
+
+  let userId: string;
+
+  if (existing[0]) {
+    const emailVerifiedAt =
+      existing[0].emailVerifiedAt ?? (isVerified ? now : null);
+
+    await db
+      .update(users)
+      .set({
         email,
         username,
         avatarUrl: data.image_url,
         emailVerifiedAt,
         deletedAt: null,
         updatedAt: now,
-      },
-    })
-    .returning({ id: users.id });
+      })
+      .where(eq(users.id, existing[0].id));
 
-  if (!user) {
-    return;
+    userId = existing[0].id;
+  } else {
+    const [created] = await db
+      .insert(users)
+      .values({
+        clerkId: data.id,
+        email,
+        username,
+        avatarUrl: data.image_url,
+        emailVerifiedAt: isVerified ? now : null,
+        deletedAt: null,
+        updatedAt: now,
+      })
+      .returning({ id: users.id });
+
+    if (!created) {
+      return;
+    }
+
+    userId = created.id;
   }
 
   await db
     .insert(userPreferences)
-    .values({ userId: user.id, theme: "system" as Theme })
+    .values({ userId, theme: "system" as Theme })
     .onConflictDoNothing();
 }
 
