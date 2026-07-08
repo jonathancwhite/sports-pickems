@@ -21,27 +21,55 @@ export class GamesServiceError extends Error {
 }
 
 async function resolveFbsClassification(classificationId?: string) {
+  let classification;
+
   if (classificationId) {
-    const classification = await prisma.classification.findUnique({
+    classification = await prisma.classification.findUnique({
       where: { id: classificationId },
     });
     if (!classification) {
       throw new GamesServiceError("Classification not found", 404, "classification_not_found");
     }
-    return classification;
+  } else {
+    classification = await prisma.classification.findFirst({
+      where: { slug: FBS_CLASSIFICATION_SLUG, active: true },
+    });
+    if (!classification) {
+      throw new GamesServiceError(
+        "FBS classification not found — run db:seed first",
+        500,
+        "classification_not_seeded",
+      );
+    }
   }
 
-  const classification = await prisma.classification.findFirst({
-    where: { slug: FBS_CLASSIFICATION_SLUG, active: true },
-  });
-  if (!classification) {
+  if (classification.slug !== FBS_CLASSIFICATION_SLUG) {
     throw new GamesServiceError(
-      "FBS classification not found — run db:seed first",
-      500,
-      "classification_not_seeded",
+      "Game sync is only supported for NCAA FBS classification",
+      400,
+      "unsupported_classification",
     );
   }
+
   return classification;
+}
+
+async function resolveDefaultSeasonYear(classificationId: string): Promise<number> {
+  const season = await prisma.season.findFirst({
+    where: { classificationId },
+    orderBy: { year: "desc" },
+    select: { year: true },
+  });
+
+  if (!season) {
+    throw new GamesServiceError(
+      "No season found for classification — run db:seed first",
+      404,
+      "season_not_found",
+    );
+  }
+
+  return season.year;
 }
 
 async function resolveSeason(classificationId: string, seasonYear: number) {
@@ -145,7 +173,8 @@ async function upsertMappedGame(seasonId: string, mapped: MappedGame): Promise<"
 
 export async function syncGames(input: SyncGamesRequest = {}): Promise<SyncGamesResponse> {
   const classification = await resolveFbsClassification(input.classificationId);
-  const seasonYear = input.seasonYear ?? new Date().getFullYear();
+  const seasonYear =
+    input.seasonYear ?? (await resolveDefaultSeasonYear(classification.id));
   const season = await resolveSeason(classification.id, seasonYear);
 
   const weeks = input.week
@@ -161,11 +190,16 @@ export async function syncGames(input: SyncGamesRequest = {}): Promise<SyncGames
       const mappedGames = await fetchFbsScoreboard({ season: seasonYear, week });
 
       for (const mapped of mappedGames) {
-        const result = await upsertMappedGame(season.id, mapped);
-        if (result === "created") {
-          synced += 1;
-        } else {
-          updated += 1;
+        try {
+          const result = await upsertMappedGame(season.id, mapped);
+          if (result === "created") {
+            synced += 1;
+          } else {
+            updated += 1;
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown sync error";
+          errors.push(`Week ${week}, game ${mapped.externalId}: ${message}`);
         }
       }
     } catch (error) {

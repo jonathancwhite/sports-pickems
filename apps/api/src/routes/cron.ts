@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { syncGamesRequestSchema } from "@callsheet/shared";
 import { processExpiredWaitlistInvites } from "../services/waitlist.js";
-import { syncGames } from "../services/games.js";
+import { syncGames, GamesServiceError } from "../services/games.js";
 
 export const cronRouter = Router();
 
@@ -39,6 +39,13 @@ cronRouter.post("/sync-games", async (req, res, next) => {
     const result = await syncGames(parsed.data);
     res.json(result);
   } catch (error) {
+    if (error instanceof GamesServiceError) {
+      res.status(error.status).json({
+        error: error.code ?? "games_error",
+        message: error.message,
+      });
+      return;
+    }
     next(error);
   }
 });

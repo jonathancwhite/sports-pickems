@@ -36,3 +36,9 @@ jobs:
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
             exit 1
           fi
+
+          error_count=$(echo "$body" | jq -r '.errors | length // 0')
+          if [ "$error_count" -gt 0 ]; then
+            echo "Sync completed with $error_count error(s)"
+            exit 1
+          fi
