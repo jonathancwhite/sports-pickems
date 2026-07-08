@@ -64,6 +64,16 @@ async function resolveFbsClassification(classificationId?: string) {
 }
 
 async function resolveDefaultSeasonYear(classificationId: string): Promise<number> {
+  const activeSeason = await prisma.season.findFirst({
+    where: { classificationId, status: "active" },
+    orderBy: { year: "desc" },
+    select: { year: true },
+  });
+
+  if (activeSeason) {
+    return activeSeason.year;
+  }
+
   const season = await prisma.season.findFirst({
     where: { classificationId },
     orderBy: { year: "desc" },
@@ -190,7 +200,11 @@ export async function syncGames(
 ): Promise<SyncGamesResponse> {
   if (gameSyncInProgress) {
     console.log("[sync-games] skipped — sync already in progress");
-    return { synced: 0, updated: 0, errors: [] };
+    throw new GamesServiceError(
+      "Game sync already in progress",
+      409,
+      "sync_in_progress",
+    );
   }
 
   gameSyncInProgress = true;

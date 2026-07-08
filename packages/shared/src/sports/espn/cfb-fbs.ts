@@ -7,7 +7,8 @@ export const ESPN_FBS_GROUP_ID = 80;
 /** ESPN season type: 2 = regular season */
 export const ESPN_REGULAR_SEASON_TYPE = 2;
 
-export type GameStatus = "scheduled" | "in_progress" | "final" | "postponed" | "cancelled";
+export type GameStatus =
+  "scheduled" | "in_progress" | "final" | "postponed" | "cancelled";
 export type GameWinner = "home" | "away" | "tie";
 
 /** Internal game shape used by sync and API layers */
@@ -92,7 +93,10 @@ export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame |
     return null;
   }
 
-  const status = mapEspnStatus(competition.status.type.name, competition.status.type.state);
+  const status = mapEspnStatus(
+    competition.status.type.name,
+    competition.status.type.state,
+  );
   const homeScore = parseScore(home.score, status);
   const awayScore = parseScore(away.score, status);
   const winner = computeWinner(status, homeScore, awayScore);
@@ -104,7 +108,7 @@ export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame |
     homeTeamAbbr: home.team.abbreviation ?? null,
     awayTeamAbbr: away.team.abbreviation ?? null,
     startTime: new Date(competition.date ?? event.date),
-    week: event.week?.number ?? week,
+    week,
     status,
     homeScore,
     awayScore,
@@ -112,7 +116,10 @@ export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame |
   };
 }
 
-export function mapEspnScoreboardToGames(scoreboard: EspnScoreboard, week: number): MappedGame[] {
+export function mapEspnScoreboardToGames(
+  scoreboard: EspnScoreboard,
+  week: number,
+): MappedGame[] {
   return scoreboard.events
     .map((event) => mapEspnEventToGame(event, week))
     .filter((game): game is MappedGame => game !== null);
@@ -151,7 +158,13 @@ export async function fetchFbsRegularSeasonWeeks(
   season: number,
   options: EspnFetchOptions = {},
 ): Promise<number[]> {
-  const scoreboard = await espnFetch<EspnScoreboard & { leagues?: Array<{ calendar?: Array<{ value: string; entries?: Array<{ value: string }> }> }> }>(
+  const scoreboard = await espnFetch<
+    EspnScoreboard & {
+      leagues?: Array<{
+        calendar?: Array<{ value: string; entries?: Array<{ value: string }> }>;
+      }>;
+    }
+  >(
     "/sports/football/college-football/scoreboard",
     {
       groups: ESPN_FBS_GROUP_ID,
@@ -165,7 +178,8 @@ export async function fetchFbsRegularSeasonWeeks(
 
   const calendar = scoreboard.leagues?.[0]?.calendar;
   const regularSeason = calendar?.find((entry) => entry.value === "2");
-  const weeks = regularSeason?.entries?.map((entry) => Number.parseInt(entry.value, 10)) ?? [];
+  const weeks =
+    regularSeason?.entries?.map((entry) => Number.parseInt(entry.value, 10)) ?? [];
 
   if (weeks.length > 0) {
     return weeks.filter((w) => !Number.isNaN(w));
