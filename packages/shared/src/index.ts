@@ -23,6 +23,36 @@ export {
 } from "./users.js";
 
 export {
+  gameSchema,
+  gameStatusSchema,
+  gameWinnerSchema,
+  gamesQuerySchema,
+  gamesResponseSchema,
+  syncGamesRequestSchema,
+  syncGamesResponseSchema,
+  type Game,
+  type GameStatus,
+  type GameWinner,
+  type GamesQuery,
+  type GamesResponse,
+  type SyncGamesRequest,
+  type SyncGamesResponse,
+} from "./games.js";
+
+export {
+  computeWinner,
+  ESPN_FBS_GROUP_ID,
+  fetchFbsRegularSeasonWeeks,
+  fetchFbsScoreboard,
+  mapEspnEventToGame,
+  mapEspnScoreboardToGames,
+  mapEspnStatus,
+  type MappedGame,
+} from "./sports/espn/cfb-fbs.js";
+
+export { EspnApiError } from "./sports/espn/client.js";
+
+export {
   createLeagueSchema,
   joinLeagueSchema,
   leagueDetailSchema,

@@ -1,0 +1,38 @@
+name: Sync Games
+
+on:
+  schedule:
+    # Daily at 6 AM UTC (off-season maintenance sync)
+    - cron: "0 6 * * *"
+    # Every 15 minutes on Saturdays (gameday score updates)
+    - cron: "*/15 * * * 6"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger game sync
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing required secrets: API_URL and CRON_SECRET"
+            exit 1
+          fi
+
+          response=$(curl -s -w "\n%{http_code}" -X POST "${API_URL}/api/cron/sync-games" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response status: $http_code"
+          echo "Response body: $body"
+
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            exit 1
+          fi

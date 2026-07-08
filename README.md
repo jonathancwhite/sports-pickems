@@ -92,8 +92,18 @@ packages/
 | `pnpm lint` | ESLint |
 | `pnpm db:generate` | Generate Prisma client |
 | `pnpm db:migrate` | Apply Prisma migrations |
-| `pnpm db:seed` | Seed sports & classifications |
+| `pnpm db:seed` | Seed sports, classifications, and games |
+| `pnpm test` | Run unit tests |
 
 ## Status
 
-**Sprint 01 complete** — monorepo foundation, database schema, health endpoint, web shell.
+**Sprint 06 complete** — ESPN game data pipeline, sync cron, games API.
+
+## GitHub Actions secrets
+
+For scheduled game sync (`.github/workflows/sync-games.yml`):
+
+| Secret | Description |
+|--------|-------------|
+| `API_URL` | Production API base URL (e.g. `https://api.callsheet.app`) |
+| `CRON_SECRET` | Shared secret for `POST /api/cron/*` endpoints (must match API env) |

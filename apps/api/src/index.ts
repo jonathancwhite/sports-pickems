@@ -8,6 +8,7 @@ config({ path: resolve(__dirname, "../../../.env") });
 import { clerkMiddleware } from "@clerk/express";
 import cors from "cors";
 import express from "express";
+import { gamesRouter } from "./routes/games.js";
 import { healthRouter } from "./routes/health.js";
 import { cronRouter } from "./routes/cron.js";
 import { leaguesRouter } from "./routes/leagues.js";
@@ -41,6 +42,7 @@ app.use("/api/cron", cronRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/leagues", leaguesRouter);
 app.use("/api/sports", sportsRouter);
+app.use("/api/games", gamesRouter);
 
 app.get("/", (_req, res) => {
   res.json({ name: "Callsheet API", version: "0.2.0" });

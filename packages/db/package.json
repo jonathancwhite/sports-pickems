@@ -20,6 +20,7 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@callsheet/shared": "workspace:*",
     "@prisma/client": "^6.9.0"
   },
   "devDependencies": {
