@@ -17,10 +17,15 @@ import { usersRouter } from "./routes/users.js";
 import { clerkWebhookRouter } from "./routes/webhooks/clerk.js";
 import { requireAuthUnlessPublic } from "./middleware/clerk-auth.js";
 import { rateLimitSensitiveRoutes } from "./middleware/rate-limit.js";
+import { validateRequiredSecrets } from "./lib/cron-auth.js";
 import { logger } from "./lib/logger.js";
+
+validateRequiredSecrets();
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
+
+app.set("trust proxy", 1);
 
 app.use(
   cors({

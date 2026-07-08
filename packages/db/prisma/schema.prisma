@@ -397,6 +397,15 @@ model CommissionerTransfer {
   @@map("commissioner_transfers")
 }
 
+model ServiceLock {
+  name      String   @id
+  owner     String
+  lockedAt  DateTime @map("locked_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@map("service_locks")
+}
+
 /// Reserved for Option B per-league billing — not used in v0.2.0
 model LeagueBoost {
   id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
