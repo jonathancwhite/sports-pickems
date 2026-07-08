@@ -1,24 +1,12 @@
-import { and, eq, isNull } from "drizzle-orm";
-import { getDb, userPreferences, users } from "@callsheet/db";
+import { prisma } from "@callsheet/db";
 import type { CurrentUser, Theme, UpdatePreferences } from "@callsheet/shared";
 
 export async function findUserByClerkId(clerkId: string): Promise<CurrentUser | null> {
-  const db = getDb();
+  const user = await prisma.user.findFirst({
+    where: { clerkId, deletedAt: null },
+    include: { preferences: true },
+  });
 
-  const row = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      avatarUrl: users.avatarUrl,
-      theme: userPreferences.theme,
-    })
-    .from(users)
-    .leftJoin(userPreferences, eq(userPreferences.userId, users.id))
-    .where(and(eq(users.clerkId, clerkId), isNull(users.deletedAt)))
-    .limit(1);
-
-  const user = row[0];
   if (!user) {
     return null;
   }
@@ -28,7 +16,7 @@ export async function findUserByClerkId(clerkId: string): Promise<CurrentUser | 
     username: user.username,
     email: user.email,
     avatarUrl: user.avatarUrl,
-    preferences: { theme: user.theme },
+    preferences: { theme: user.preferences?.theme ?? "system" },
   };
 }
 
@@ -36,23 +24,20 @@ export async function updateUserPreferences(
   clerkId: string,
   preferences: UpdatePreferences,
 ): Promise<CurrentUser | null> {
-  const db = getDb();
+  const existing = await prisma.user.findFirst({
+    where: { clerkId, deletedAt: null },
+    select: { id: true },
+  });
 
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(and(eq(users.clerkId, clerkId), isNull(users.deletedAt)))
-    .limit(1);
-
-  const userId = existing[0]?.id;
-  if (!userId) {
+  if (!existing) {
     return null;
   }
 
-  await db
-    .update(userPreferences)
-    .set({ theme: preferences.theme, updatedAt: new Date() })
-    .where(eq(userPreferences.userId, userId));
+  await prisma.userPreference.upsert({
+    where: { userId: existing.id },
+    create: { userId: existing.id, theme: preferences.theme },
+    update: { theme: preferences.theme },
+  });
 
   return findUserByClerkId(clerkId);
 }
@@ -90,69 +75,58 @@ function getPrimaryEmail(data: ClerkUserData): {
 }
 
 export async function upsertUserFromClerk(data: ClerkUserData): Promise<void> {
-  const db = getDb();
   const { email, isVerified } = getPrimaryEmail(data);
   const username = data.username ?? data.id;
   const now = new Date();
 
-  const existing = await db
-    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt })
-    .from(users)
-    .where(eq(users.clerkId, data.id))
-    .limit(1);
+  const existing = await prisma.user.findUnique({
+    where: { clerkId: data.id },
+    select: { id: true, emailVerifiedAt: true },
+  });
 
-  let userId: string;
+  if (existing) {
+    const emailVerifiedAt = existing.emailVerifiedAt ?? (isVerified ? now : null);
 
-  if (existing[0]) {
-    const emailVerifiedAt =
-      existing[0].emailVerifiedAt ?? (isVerified ? now : null);
-
-    await db
-      .update(users)
-      .set({
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: {
         email,
         username,
         avatarUrl: data.image_url,
         emailVerifiedAt,
         deletedAt: null,
         updatedAt: now,
-      })
-      .where(eq(users.id, existing[0].id));
+      },
+    });
 
-    userId = existing[0].id;
-  } else {
-    const [created] = await db
-      .insert(users)
-      .values({
-        clerkId: data.id,
-        email,
-        username,
-        avatarUrl: data.image_url,
-        emailVerifiedAt: isVerified ? now : null,
-        deletedAt: null,
-        updatedAt: now,
-      })
-      .returning({ id: users.id });
+    await prisma.userPreference.upsert({
+      where: { userId: existing.id },
+      create: { userId: existing.id, theme: "system" as Theme },
+      update: {},
+    });
 
-    if (!created) {
-      return;
-    }
-
-    userId = created.id;
+    return;
   }
 
-  await db
-    .insert(userPreferences)
-    .values({ userId, theme: "system" as Theme })
-    .onConflictDoNothing();
+  await prisma.user.create({
+    data: {
+      clerkId: data.id,
+      email,
+      username,
+      avatarUrl: data.image_url,
+      emailVerifiedAt: isVerified ? now : null,
+      preferences: {
+        create: { theme: "system" as Theme },
+      },
+    },
+  });
 }
 
 export async function softDeleteUserByClerkId(clerkId: string): Promise<void> {
-  const db = getDb();
   const now = new Date();
 
-  await db
-    .update(users)
-    .set({ deletedAt: now, updatedAt: now })
-    .where(eq(users.clerkId, clerkId));
+  await prisma.user.updateMany({
+    where: { clerkId },
+    data: { deletedAt: now, updatedAt: now },
+  });
 }

@@ -66,7 +66,7 @@ callsheet/
 │   ├── api/                 # Express REST API → Fly.io
 │   └── worker/              # Absurd SDK worker → Fly.io (same image)
 ├── packages/
-│   ├── db/                  # Drizzle schema, migrations, DB client
+│   ├── db/                  # Prisma schema, migrations, DB client
 │   ├── shared/              # Zod schemas, constants, ESPN adapter types
 │   └── email/               # Resend templates + send helpers
 ├── supabase/
@@ -99,7 +99,7 @@ Not a hard technical requirement. `apps/` groups all deployable artifacts (web, 
 | **Payments** | Clerk Billing + Stripe | User-level Pro subscription |
 | **API** | Express + TypeScript | REST (not tRPC) |
 | **Database** | Supabase Postgres | Postgres host only — no Supabase Auth/Realtime/Storage |
-| **ORM** | Drizzle | Type-safe schema, migrations, portable to RDS later |
+| **ORM** | Prisma | Type-safe schema, migrations, portable to RDS later |
 | **Email** | Resend | Transactional only (not auth verification) |
 | **Background jobs** | absurd-sdk | Postgres-native durable tasks; no Redis |
 | **Validation** | Zod | Shared between API and web via `packages/shared` |
@@ -190,11 +190,11 @@ Templates live in `packages/email/`. All sends logged in `notification_log` tabl
 | Context | Connection |
 |---------|------------|
 | API + Worker (runtime) | Supavisor **transaction pooler** (port 6543) |
-| Migrations (Drizzle) | Direct connection (port 5432) |
+| Migrations (Prisma) | Direct connection (port 5432) |
 
 ### ORM
 
-Drizzle ORM in `packages/db/`. Schema is portable to raw AWS RDS without vendor lock-in.
+Prisma ORM in `packages/db/`. Schema is portable to raw AWS RDS without vendor lock-in.
 
 ### Core entities
 

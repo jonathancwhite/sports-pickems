@@ -1,70 +1,49 @@
-import { and, eq } from "drizzle-orm";
-import { getDb } from "./client.js";
-import {
-  classifications,
-  seasons,
-  sports,
-} from "./schema/tables.js";
+import { prisma } from "./client.js";
 
 export async function seed() {
-  const db = getDb();
-
-  const [football] = await db
-    .insert(sports)
-    .values({
+  const football = await prisma.sport.upsert({
+    where: { slug: "football" },
+    create: {
       slug: "football",
       name: "Football",
       active: true,
-    })
-    .onConflictDoNothing({ target: sports.slug })
-    .returning();
+    },
+    update: {},
+  });
 
-  let sport = football;
-  if (!sport) {
-    const rows = await db.select().from(sports).where(eq(sports.slug, "football")).limit(1);
-    sport = rows[0];
-  }
-
-  if (!sport) {
-    throw new Error("Failed to seed football sport");
-  }
-
-  const [fbs] = await db
-    .insert(classifications)
-    .values({
-      sportId: sport.id,
+  const classification = await prisma.classification.upsert({
+    where: {
+      sportId_slug: {
+        sportId: football.id,
+        slug: "ncaa-fbs",
+      },
+    },
+    create: {
+      sportId: football.id,
       slug: "ncaa-fbs",
       name: "NCAA FBS",
       tier: "core",
       active: true,
-    })
-    .onConflictDoNothing()
-    .returning();
-
-  let classification = fbs;
-  if (!classification) {
-    const rows = await db
-      .select()
-      .from(classifications)
-      .where(and(eq(classifications.sportId, sport.id), eq(classifications.slug, "ncaa-fbs")))
-      .limit(1);
-    classification = rows[0];
-  }
-
-  if (!classification) {
-    throw new Error("Failed to seed NCAA FBS classification");
-  }
+    },
+    update: {},
+  });
 
   const currentYear = new Date().getFullYear();
 
-  await db
-    .insert(seasons)
-    .values({
+  await prisma.season.upsert({
+    where: {
+      classificationId_year: {
+        classificationId: classification.id,
+        year: currentYear,
+      },
+    },
+    create: {
       classificationId: classification.id,
       year: currentYear,
       status: "upcoming",
-    })
-    .onConflictDoNothing();
+    },
+    update: {},
+  });
 
   console.log(`Seeded: Football / NCAA FBS / ${currentYear} season`);
 }

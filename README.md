@@ -16,7 +16,7 @@ Sports pick'em platform — create leagues, invite friends, compete to predict g
 - **Web:** React 19, TypeScript, Vite, TanStack Router, TanStack Query, shadcn/ui (Base UI)
 - **API:** Express, TypeScript, Clerk (Sprint 02)
 - **Worker:** absurd-sdk (Sprint 10)
-- **Database:** PostgreSQL (Supabase in prod), Drizzle ORM
+- **Database:** PostgreSQL (Supabase in prod), Prisma ORM
 - **Email:** Resend (Sprint 10)
 
 ## Local development setup
@@ -77,7 +77,7 @@ apps/
   api/       → Express REST API (Fly.io)
   worker/    → Background jobs (Fly.io)
 packages/
-  db/        → Drizzle schema & migrations
+  db/        → Prisma schema & migrations
   shared/    → Zod schemas & constants
   email/     → Resend templates
 ```
@@ -90,8 +90,8 @@ packages/
 | `pnpm build` | Build all packages |
 | `pnpm typecheck` | TypeScript check |
 | `pnpm lint` | ESLint |
-| `pnpm db:generate` | Generate migration from schema changes |
-| `pnpm db:migrate` | Apply migrations |
+| `pnpm db:generate` | Generate Prisma client |
+| `pnpm db:migrate` | Apply Prisma migrations |
 | `pnpm db:seed` | Seed sports & classifications |
 
 ## Status

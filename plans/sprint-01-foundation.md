@@ -5,6 +5,8 @@
 **Depends on:** Nothing  
 **Blocks:** All other sprints
 
+> **Note:** ORM tooling was originally Drizzle (S01-04). [Infra 01](infra-01-orm-migration-prisma.md) migrates `packages/db` to Prisma; treat that plan as the source of truth for schema and migration commands.
+
 ---
 
 ## Stories
