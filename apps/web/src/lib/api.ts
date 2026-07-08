@@ -5,8 +5,11 @@ import type {
   League,
   LeagueDetail,
   MyLeaguesResponse,
+  PublicLeaguesQuery,
+  PublicLeaguesResponse,
   SportWithClassifications,
   UpdatePreferences,
+  WaitlistResponse,
 } from "@callsheet/shared";
 import { useAuth } from "@clerk/clerk-react";
 
@@ -117,6 +120,34 @@ export function useApiClient() {
       }),
     getInvitePreview: (code: string) =>
       publicApiFetch<InvitePreview>(`/api/leagues/invite/${code}`),
+    getPublicLeagues: (query: PublicLeaguesQuery) => {
+      const params = new URLSearchParams();
+      if (query.sportId) params.set("sportId", query.sportId);
+      if (query.classificationId) params.set("classificationId", query.classificationId);
+      if (query.sort) params.set("sort", query.sort);
+      if (query.page) params.set("page", String(query.page));
+      if (query.limit) params.set("limit", String(query.limit));
+      const qs = params.toString();
+      return publicApiFetch<PublicLeaguesResponse>(
+        `/api/leagues/public${qs ? `?${qs}` : ""}`,
+      );
+    },
+    joinPublicLeague: (id: string) =>
+      apiFetch<League>(`/api/leagues/${id}/join`, getToken, { method: "POST" }),
+    joinWaitlist: (id: string) =>
+      apiFetch<{ position: number }>(`/api/leagues/${id}/waitlist`, getToken, {
+        method: "POST",
+      }),
+    getWaitlist: (id: string) =>
+      apiFetch<WaitlistResponse>(`/api/leagues/${id}/waitlist`, getToken),
+    leaveWaitlist: (id: string) =>
+      apiFetch<void>(`/api/leagues/${id}/waitlist/me`, getToken, { method: "DELETE" }),
+    leaveLeague: (id: string) =>
+      apiFetch<void>(`/api/leagues/${id}/members/me`, getToken, { method: "DELETE" }),
+    removeMember: (leagueId: string, userId: string) =>
+      apiFetch<LeagueDetail>(`/api/leagues/${leagueId}/members/${userId}`, getToken, {
+        method: "DELETE",
+      }),
   };
 }
 

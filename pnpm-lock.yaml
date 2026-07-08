@@ -35,6 +35,9 @@ importers:
       '@callsheet/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@callsheet/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@callsheet/shared':
         specifier: workspace:*
         version: link:../../packages/shared

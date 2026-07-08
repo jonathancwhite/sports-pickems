@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@callsheet/db": "workspace:*",
+    "@callsheet/email": "workspace:*",
     "@callsheet/shared": "workspace:*",
     "@clerk/express": "^2.1.37",
     "bcryptjs": "^3.0.3",

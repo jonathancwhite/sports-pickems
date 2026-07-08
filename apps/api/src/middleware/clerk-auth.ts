@@ -6,6 +6,7 @@ const PUBLIC_PATHS: Array<{ method: string; pattern: RegExp }> = [
   { method: "POST", pattern: /^\/webhooks\// },
   { method: "POST", pattern: /^\/cron\// },
   { method: "GET", pattern: /^\/leagues\/invite\/[^/]+$/ },
+  { method: "GET", pattern: /^\/leagues\/public$/ },
 ];
 
 export function isPublicApiPath(method: string, path: string): boolean {

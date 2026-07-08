@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Lock, Users } from "lucide-react";
 import { useState } from "react";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { useInvitePreview, useJoinLeague } from "@/hooks/use-leagues";
+import { useInvitePreview, useJoinLeague, useJoinWaitlist } from "@/hooks/use-leagues";
 import { ApiError } from "@/lib/api";
 import { showApiError, showSuccess } from "@/lib/toast";
 
@@ -17,6 +17,7 @@ function InvitePage() {
   const navigate = useNavigate();
   const { data: preview, isPending, isError } = useInvitePreview(code);
   const joinLeague = useJoinLeague();
+  const joinWaitlist = useJoinWaitlist();
   const [password, setPassword] = useState("");
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
@@ -51,6 +52,19 @@ function InvitePage() {
         </p>
       </div>
     );
+  }
+
+  async function handleJoinWaitlist() {
+    if (!preview) {
+      return;
+    }
+
+    try {
+      const result = await joinWaitlist.mutateAsync(preview.id);
+      showSuccess(`Added to waitlist — you're #${result.position}`);
+    } catch (error) {
+      showApiError(error, "Failed to join waitlist");
+    }
   }
 
   async function handleJoin() {
@@ -100,11 +114,31 @@ function InvitePage() {
         </div>
 
         {preview.isFull ? (
-          <div className="mt-6 rounded-md border border-dashed bg-muted/40 p-4 text-center">
-            <p className="font-medium">This league is full</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Waitlist support is coming soon.
-            </p>
+          <div className="mt-6 space-y-3">
+            <div className="rounded-md border border-dashed bg-muted/40 p-4 text-center">
+              <p className="font-medium">This league is full</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Join the waitlist to get notified when a spot opens.
+              </p>
+            </div>
+            {!isSignedIn ? (
+              <Link
+                to="/sign-up"
+                search={{ redirect_url: `/invite/${code}` }}
+                className="block w-full rounded-md bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Sign up to join waitlist
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={handleJoinWaitlist}
+                disabled={joinWaitlist.isPending}
+                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {joinWaitlist.isPending ? "Joining waitlist…" : "Join waitlist"}
+              </button>
+            )}
           </div>
         ) : !isSignedIn ? (
           <div className="mt-6 space-y-3">
