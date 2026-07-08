@@ -8,3 +8,16 @@ export const healthResponseSchema = z.object({
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
 export const APP_NAME = "Callsheet";
+
+export {
+  currentUserSchema,
+  themeSchema,
+  updatePreferencesSchema,
+  userNotSyncedErrorSchema,
+  userPreferencesSchema,
+  type CurrentUser,
+  type Theme,
+  type UpdatePreferences,
+  type UserNotSyncedError,
+  type UserPreferences,
+} from "./users.js";

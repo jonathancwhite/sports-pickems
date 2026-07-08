@@ -1,5 +1,6 @@
+import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { APP_NAME } from "@callsheet/shared";
 
 async function fetchHealth() {
@@ -28,6 +29,35 @@ function HomePage() {
         <p className="mt-3 text-lg text-muted-foreground">
           Pick games. Beat your friends.
         </p>
+      </div>
+
+      <div className="flex gap-3">
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button
+              type="button"
+              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Sign in
+            </button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <button
+              type="button"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Sign up
+            </button>
+          </SignUpButton>
+        </SignedOut>
+        <SignedIn>
+          <Link
+            to="/dashboard"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Go to dashboard
+          </Link>
+        </SignedIn>
       </div>
 
       <div className="rounded-lg border bg-card px-6 py-4 text-sm text-card-foreground shadow-sm">

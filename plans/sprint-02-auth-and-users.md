@@ -16,14 +16,14 @@
 **So that** I have a secure account with a required username
 
 **Acceptance criteria:**
-- [ ] `@clerk/clerk-react` installed in `apps/web`
-- [ ] `ClerkProvider` wraps app in root layout
-- [ ] `/sign-in` route renders Clerk `<SignIn />` component
-- [ ] `/sign-up` route renders Clerk `<SignUp />` component
-- [ ] Username required (configured in Clerk Dashboard + enforced in sign-up)
-- [ ] After sign-up/sign-in, redirect to `/dashboard`
-- [ ] `<UserButton />` in app header for signed-in users
-- [ ] Sign-out clears session and redirects to `/`
+- [x] `@clerk/clerk-react` installed in `apps/web`
+- [x] `ClerkProvider` wraps app in root layout
+- [x] `/sign-in` route renders Clerk `<SignIn />` component
+- [x] `/sign-up` route renders Clerk `<SignUp />` component
+- [x] Username required (configured in Clerk Dashboard + enforced in sign-up)
+- [x] After sign-up/sign-in, redirect to `/dashboard`
+- [x] `<UserButton />` in app header for signed-in users
+- [x] Sign-out clears session and redirects to `/`
 
 **Technical notes:**
 - Clerk Dashboard: enable username, set as required field
@@ -39,11 +39,11 @@
 **So that** API endpoints are secured
 
 **Acceptance criteria:**
-- [ ] `@clerk/express` middleware on all `/api/*` routes except public allowlist
-- [ ] Public allowlist: `/api/health`, `/api/webhooks/*`, `/api/cron/*`, `GET /api/leagues/invite/:code`
-- [ ] Authenticated requests attach `req.auth.userId` (Clerk ID)
-- [ ] Unauthenticated requests to protected routes return 401
-- [ ] `CLERK_SECRET_KEY` in api env
+- [x] `@clerk/express` middleware on all `/api/*` routes except public allowlist
+- [x] Public allowlist: `/api/health`, `/api/webhooks/*`, `/api/cron/*`, `GET /api/leagues/invite/:code`
+- [x] Authenticated requests attach `req.auth.userId` (Clerk ID)
+- [x] Unauthenticated requests to protected routes return 401
+- [x] `CLERK_SECRET_KEY` in api env
 
 ---
 
@@ -54,14 +54,14 @@
 **So that** leagues and picks reference stable internal user IDs
 
 **Acceptance criteria:**
-- [ ] `POST /api/webhooks/clerk` endpoint with signature verification
-- [ ] Handles `user.created` → insert into `users` table
-- [ ] Handles `user.updated` → update `users` row
-- [ ] Handles `user.deleted` → soft-delete or mark inactive
-- [ ] Maps: `clerk_id`, `email`, `username`, `avatar_url`, `email_verified_at`
-- [ ] Creates `user_preferences` row on user creation (default theme: `system`)
-- [ ] Idempotent — duplicate webhook deliveries don't create duplicate rows
-- [ ] `CLERK_WEBHOOK_SECRET` in api env
+- [x] `POST /api/webhooks/clerk` endpoint with signature verification
+- [x] Handles `user.created` → insert into `users` table
+- [x] Handles `user.updated` → update `users` row
+- [x] Handles `user.deleted` → soft-delete or mark inactive
+- [x] Maps: `clerk_id`, `email`, `username`, `avatar_url`, `email_verified_at`
+- [x] Creates `user_preferences` row on user creation (default theme: `system`)
+- [x] Idempotent — duplicate webhook deliveries don't create duplicate rows
+- [x] `CLERK_WEBHOOK_SECRET` in api env
 
 ---
 
@@ -72,11 +72,11 @@
 **So that** only signed-in users access the app
 
 **Acceptance criteria:**
-- [ ] TanStack Router `beforeLoad` on protected route layout checks Clerk session
-- [ ] Unauthenticated users redirected to `/sign-in?redirect_url=...`
-- [ ] After sign-in, user returned to intended page
-- [ ] Protected layout: `/dashboard`, `/leagues/*`, `/settings`
-- [ ] Public layout: `/`, `/sign-in`, `/sign-up`, `/invite/:code`
+- [x] TanStack Router `beforeLoad` on protected route layout checks Clerk session
+- [x] Unauthenticated users redirected to `/sign-in?redirect_url=...`
+- [x] After sign-in, user returned to intended page
+- [x] Protected layout: `/dashboard`, `/leagues/*`, `/settings`
+- [x] Public layout: `/`, `/sign-in`, `/sign-up`, `/invite/:code`
 
 ---
 
@@ -87,10 +87,10 @@
 **So that** I can display username, avatar, and preferences
 
 **Acceptance criteria:**
-- [ ] `GET /api/users/me` returns user profile from Postgres (not Clerk API)
-- [ ] Response: `{ id, username, email, avatarUrl, preferences: { theme } }`
-- [ ] Returns 404 if webhook hasn't synced yet (with retry guidance)
-- [ ] TanStack Query hook `useCurrentUser()` in web app
+- [x] `GET /api/users/me` returns user profile from Postgres (not Clerk API)
+- [x] Response: `{ id, username, email, avatarUrl, preferences: { theme } }`
+- [x] Returns 404 if webhook hasn't synced yet (with retry guidance)
+- [x] TanStack Query hook `useCurrentUser()` in web app
 
 ---
 
@@ -101,12 +101,12 @@
 **So that** the app matches my preference
 
 **Acceptance criteria:**
-- [ ] `PUT /api/users/me/preferences` accepts `{ theme: "light" | "dark" | "system" }`
-- [ ] Persists to `user_preferences` table
-- [ ] Theme toggle component in settings or header dropdown
-- [ ] Theme applied via `class="dark"` on `<html>` (shadcn pattern)
-- [ ] Optimistic update via TanStack Query mutation
-- [ ] Falls back to `localStorage` while loading
+- [x] `PUT /api/users/me/preferences` accepts `{ theme: "light" | "dark" | "system" }`
+- [x] Persists to `user_preferences` table
+- [x] Theme toggle component in settings or header dropdown
+- [x] Theme applied via `class="dark"` on `<html>` (shadcn pattern)
+- [x] Optimistic update via TanStack Query mutation
+- [x] Falls back to `localStorage` while loading
 
 ---
 
@@ -117,10 +117,10 @@
 **So that** I have a landing point after sign-in
 
 **Acceptance criteria:**
-- [ ] `/dashboard` renders authenticated layout with sidebar placeholder
-- [ ] Displays "Welcome, {username}"
-- [ ] Shows empty state: "No leagues yet — create or join one"
-- [ ] Links to `/leagues/new` and `/leagues` (browse)
+- [x] `/dashboard` renders authenticated layout with sidebar placeholder
+- [x] Displays "Welcome, {username}"
+- [x] Shows empty state: "No leagues yet — create or join one"
+- [x] Links to `/leagues/new` and `/leagues` (browse)
 
 ---
 
@@ -136,9 +136,9 @@
 
 ## Sprint definition of done
 
-- [ ] Sign up with username → user row in Postgres
-- [ ] Sign in → dashboard accessible
-- [ ] Sign out → redirected to landing
-- [ ] Unauthenticated access to `/dashboard` → redirect to sign-in
-- [ ] Theme toggle persists across sessions
-- [ ] All stories checked off
+- [x] Sign up with username → user row in Postgres
+- [x] Sign in → dashboard accessible
+- [x] Sign out → redirected to landing
+- [x] Unauthenticated access to `/dashboard` → redirect to sign-in
+- [x] Theme toggle persists across sessions
+- [x] All stories checked off
