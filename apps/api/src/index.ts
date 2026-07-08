@@ -5,10 +5,13 @@ import { fileURLToPath } from "node:url";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 config({ path: resolve(__dirname, "../../../.env") });
 
+import { clerkMiddleware } from "@clerk/express";
 import cors from "cors";
 import express from "express";
-import { checkDbConnection } from "@callsheet/db";
 import { healthRouter } from "./routes/health.js";
+import { usersRouter } from "./routes/users.js";
+import { clerkWebhookRouter } from "./routes/webhooks/clerk.js";
+import { requireAuthUnlessPublic } from "./middleware/clerk-auth.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -19,19 +22,26 @@ app.use(
     credentials: true,
   }),
 );
+
+app.use(
+  "/api/webhooks",
+  express.raw({ type: "application/json" }),
+  clerkWebhookRouter,
+);
+
 app.use(express.json());
+app.use(clerkMiddleware());
+app.use("/api", requireAuthUnlessPublic);
 
 app.use("/api", healthRouter);
+app.use("/api/users", usersRouter);
 
 app.get("/", (_req, res) => {
   res.json({ name: "Callsheet API", version: "0.2.0" });
 });
 
-app.listen(port, async () => {
-  const dbOk = await checkDbConnection();
-  console.log(
-    `API running on http://localhost:${port} (db: ${dbOk ? "connected" : "disconnected"})`,
-  );
+app.listen(port, () => {
+  console.log(`API running on http://localhost:${port}`);
 });
 
 export { app };
