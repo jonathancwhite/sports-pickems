@@ -9,6 +9,7 @@ import { clerkMiddleware } from "@clerk/express";
 import cors from "cors";
 import express from "express";
 import { healthRouter } from "./routes/health.js";
+import { cronRouter } from "./routes/cron.js";
 import { leaguesRouter } from "./routes/leagues.js";
 import { sportsRouter } from "./routes/sports.js";
 import { usersRouter } from "./routes/users.js";
@@ -36,6 +37,7 @@ app.use(clerkMiddleware());
 app.use("/api", requireAuthUnlessPublic);
 
 app.use("/api", healthRouter);
+app.use("/api/cron", cronRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/leagues", leaguesRouter);
 app.use("/api/sports", sportsRouter);

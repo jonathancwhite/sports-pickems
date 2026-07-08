@@ -137,6 +137,61 @@ export const leagueLimitErrorSchema = z.object({
 
 export type LeagueLimitError = z.infer<typeof leagueLimitErrorSchema>;
 
+export const publicLeaguesQuerySchema = z.object({
+  sportId: z.string().uuid().optional(),
+  classificationId: z.string().uuid().optional(),
+  sort: z.enum(["newest", "members", "name"]).default("newest"),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export type PublicLeaguesQuery = z.infer<typeof publicLeaguesQuerySchema>;
+
+export const publicLeagueSummarySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  sportId: z.string().uuid(),
+  sportName: z.string(),
+  sportSlug: z.string(),
+  classificationId: z.string().uuid(),
+  classificationName: z.string(),
+  classificationSlug: z.string(),
+  memberCount: z.number().int(),
+  maxMembers: z.number().int(),
+  commissionerUsername: z.string(),
+  isFull: z.boolean(),
+  createdAt: z.string().datetime(),
+});
+
+export type PublicLeagueSummary = z.infer<typeof publicLeagueSummarySchema>;
+
+export const publicLeaguesResponseSchema = z.object({
+  leagues: z.array(publicLeagueSummarySchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+});
+
+export type PublicLeaguesResponse = z.infer<typeof publicLeaguesResponseSchema>;
+
+export const waitlistEntrySchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  username: z.string(),
+  position: z.number().int(),
+  invitedAt: z.string().datetime().nullable(),
+  expiresAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export type WaitlistEntry = z.infer<typeof waitlistEntrySchema>;
+
+export const waitlistResponseSchema = z.object({
+  entries: z.array(waitlistEntrySchema),
+});
+
+export type WaitlistResponse = z.infer<typeof waitlistResponseSchema>;
+
 export const FREE_TIER_MAX_LEAGUES = 2;
 export const FREE_TIER_MAX_MEMBERS = 10;
 

@@ -5,10 +5,17 @@ import type {
   League,
   LeagueDetail,
   MyLeaguesResponse,
+  PublicLeaguesQuery,
+  PublicLeaguesResponse,
 } from "@callsheet/shared";
 import { FREE_TIER_MAX_LEAGUES } from "@callsheet/shared";
 import bcrypt from "bcryptjs";
 import { customAlphabet } from "nanoid";
+import {
+  clearUserWaitlistEntry,
+  isSeasonLocked,
+  offerNextWaitlistSpot,
+} from "./waitlist.js";
 
 const generateInviteCode = customAlphabet(
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
@@ -446,6 +453,8 @@ export async function joinLeague(
       },
     });
 
+    await clearUserWaitlistEntry(league.id, user.id, tx);
+
     return tx.league.update({
       where: { id: league.id },
       data: { memberCount: { increment: 1 } },
@@ -483,4 +492,268 @@ export async function getActiveCreatedLeagueCount(clerkId: string): Promise<numb
     return 0;
   }
   return countActiveCreatedLeagues(user.id);
+}
+
+export async function browsePublicLeagues(
+  query: PublicLeaguesQuery,
+): Promise<PublicLeaguesResponse> {
+  const { sportId, classificationId, sort, page, limit } = query;
+  const skip = (page - 1) * limit;
+
+  const where = {
+    isPublic: true,
+    deletedAt: null,
+    status: { in: ["active", "setup"] as ("active" | "setup")[] },
+    ...(sportId ? { sportId } : {}),
+    ...(classificationId ? { classificationId } : {}),
+  };
+
+  const orderBy =
+    sort === "members"
+      ? [{ memberCount: "desc" as const }, { createdAt: "desc" as const }]
+      : sort === "name"
+        ? [{ name: "asc" as const }]
+        : [{ createdAt: "desc" as const }];
+
+  const [leagues, total] = await Promise.all([
+    prisma.league.findMany({
+      where,
+      include: {
+        sport: true,
+        classification: true,
+        commissioner: { select: { username: true } },
+      },
+      orderBy,
+      skip,
+      take: limit,
+    }),
+    prisma.league.count({ where }),
+  ]);
+
+  return {
+    leagues: leagues.map((league) => ({
+      id: league.id,
+      name: league.name,
+      sportId: league.sportId,
+      sportName: league.sport.name,
+      sportSlug: league.sport.slug,
+      classificationId: league.classificationId,
+      classificationName: league.classification.name,
+      classificationSlug: league.classification.slug,
+      memberCount: league.memberCount,
+      maxMembers: league.maxMembers,
+      commissionerUsername: league.commissioner.username,
+      isFull: league.memberCount >= league.maxMembers,
+      createdAt: league.createdAt.toISOString(),
+    })),
+    total,
+    page,
+    limit,
+  };
+}
+
+export async function joinPublicLeague(clerkId: string, leagueId: string): Promise<League> {
+  const user = await findUserByClerkId(clerkId);
+  if (!user) {
+    throw new LeagueServiceError("User not found", 404, "user_not_synced");
+  }
+
+  const league = await prisma.league.findFirst({
+    where: { id: leagueId, deletedAt: null },
+    include: leagueInclude,
+  });
+
+  if (!league) {
+    throw new LeagueServiceError("League not found", 404);
+  }
+
+  if (league.status === "archived") {
+    throw new LeagueServiceError("This league has been archived", 410);
+  }
+
+  if (!league.isPublic) {
+    throw new LeagueServiceError("This league is not public", 403, "league_not_public");
+  }
+
+  if (!league.currentSeasonId) {
+    throw new LeagueServiceError("League season not configured", 500);
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const locked = await lockLeagueForUpdate(tx, leagueId);
+    if (!locked) {
+      throw new LeagueServiceError("League not found", 404);
+    }
+
+    if (locked.status === "archived") {
+      throw new LeagueServiceError("This league has been archived", 410);
+    }
+
+    if (!locked.current_season_id) {
+      throw new LeagueServiceError("League season not configured", 500);
+    }
+
+    if (locked.member_count >= locked.max_members) {
+      throw new LeagueServiceError("This league is full", 409, "league_full");
+    }
+
+    const existingMembership = await tx.leagueMember.findFirst({
+      where: {
+        leagueId,
+        userId: user.id,
+        seasonId: locked.current_season_id,
+      },
+    });
+
+    if (existingMembership) {
+      throw new LeagueServiceError("You are already a member of this league", 409);
+    }
+
+    await tx.leagueMember.create({
+      data: {
+        leagueId,
+        userId: user.id,
+        seasonId: locked.current_season_id,
+        role: "member",
+      },
+    });
+
+    await clearUserWaitlistEntry(leagueId, user.id, tx);
+
+    return tx.league.update({
+      where: { id: leagueId },
+      data: { memberCount: { increment: 1 } },
+      include: leagueInclude,
+    });
+  });
+
+  return mapLeague(updated, { role: "member", isCommissioner: false });
+}
+
+export async function leaveLeague(clerkId: string, leagueId: string): Promise<void> {
+  const user = await findUserByClerkId(clerkId);
+  if (!user) {
+    throw new LeagueServiceError("User not found", 404, "user_not_synced");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const locked = await lockLeagueForUpdate(tx, leagueId);
+    if (!locked) {
+      throw new LeagueServiceError("League not found", 404);
+    }
+
+    if (!locked.current_season_id) {
+      throw new LeagueServiceError("League season not configured", 500);
+    }
+
+    const league = await tx.league.findFirst({
+      where: { id: leagueId },
+      include: { currentSeason: true },
+    });
+
+    if (!league) {
+      throw new LeagueServiceError("League not found", 404);
+    }
+
+    const membership = await tx.leagueMember.findFirst({
+      where: {
+        leagueId,
+        userId: user.id,
+        seasonId: locked.current_season_id,
+      },
+    });
+
+    if (!membership) {
+      throw new LeagueServiceError("You are not a member of this league", 403);
+    }
+
+    if (membership.role === "commissioner") {
+      throw new LeagueServiceError(
+        "Commissioners cannot leave — transfer ownership first",
+        403,
+        "commissioner_cannot_leave",
+      );
+    }
+
+    await tx.leagueMember.delete({ where: { id: membership.id } });
+
+    const seasonLocked = isSeasonLocked({
+      status: league.status,
+      currentSeason: league.currentSeason,
+    });
+
+    if (!seasonLocked) {
+      await tx.league.update({
+        where: { id: leagueId },
+        data: { memberCount: { decrement: 1 } },
+      });
+      await offerNextWaitlistSpot(leagueId, tx);
+    }
+  });
+}
+
+export async function removeMember(
+  clerkId: string,
+  leagueId: string,
+  targetUserId: string,
+): Promise<LeagueDetail> {
+  const user = await findUserByClerkId(clerkId);
+  if (!user) {
+    throw new LeagueServiceError("User not found", 404, "user_not_synced");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const locked = await lockLeagueForUpdate(tx, leagueId);
+    if (!locked) {
+      throw new LeagueServiceError("League not found", 404);
+    }
+
+    if (!locked.current_season_id) {
+      throw new LeagueServiceError("League season not configured", 500);
+    }
+
+    const commissionerMembership = await tx.leagueMember.findFirst({
+      where: {
+        leagueId,
+        userId: user.id,
+        seasonId: locked.current_season_id,
+        role: "commissioner",
+      },
+    });
+
+    if (!commissionerMembership) {
+      throw new LeagueServiceError("Only the commissioner can remove members", 403);
+    }
+
+    if (targetUserId === user.id) {
+      throw new LeagueServiceError("Commissioners cannot remove themselves", 400);
+    }
+
+    const membership = await tx.leagueMember.findFirst({
+      where: {
+        leagueId,
+        userId: targetUserId,
+        seasonId: locked.current_season_id,
+      },
+    });
+
+    if (!membership) {
+      throw new LeagueServiceError("Member not found", 404);
+    }
+
+    if (membership.role === "commissioner") {
+      throw new LeagueServiceError("Cannot remove the commissioner", 400);
+    }
+
+    await tx.leagueMember.delete({ where: { id: membership.id } });
+
+    await tx.league.update({
+      where: { id: leagueId },
+      data: { memberCount: { decrement: 1 } },
+    });
+
+    await offerNextWaitlistSpot(leagueId, tx);
+  });
+
+  return getLeagueDetail(clerkId, leagueId);
 }
