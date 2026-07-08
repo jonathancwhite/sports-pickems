@@ -16,7 +16,6 @@
     "@clerk/express": "^2.1.37",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "drizzle-orm": "^0.39.3",
     "express": "^4.21.2"
   },
   "devDependencies": {

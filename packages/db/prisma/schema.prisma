@@ -1,0 +1,369 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_DIRECT")
+}
+
+enum MemberRole {
+  commissioner
+  member
+
+  @@map("member_role")
+}
+
+enum LeagueStatus {
+  setup
+  active
+  archived
+
+  @@map("league_status")
+}
+
+enum SeasonStatus {
+  upcoming
+  active
+  completed
+
+  @@map("season_status")
+}
+
+enum GameStatus {
+  scheduled
+  in_progress
+  final
+  postponed
+  cancelled
+
+  @@map("game_status")
+}
+
+enum TiePolicy {
+  no_points
+  count_as_correct
+  half_point
+
+  @@map("tie_policy")
+}
+
+enum SportTier {
+  core
+  beta
+
+  @@map("sport_tier")
+}
+
+enum NotificationType {
+  pick_reminder_48h
+  pick_reminder_6h
+  slate_change
+  waitlist_invite
+  commissioner_transfer
+  season_invite
+
+  @@map("notification_type")
+}
+
+enum Theme {
+  light
+  dark
+  system
+
+  @@map("theme")
+}
+
+enum PickedTeam {
+  home
+  away
+
+  @@map("picked_team")
+}
+
+enum LeagueBoostType {
+  member_cap
+  beta_sport
+
+  @@map("league_boost_type")
+}
+
+enum GameWinner {
+  home
+  away
+  tie
+
+  @@map("game_winner")
+}
+
+model Sport {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String   @unique
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  classifications Classification[]
+  leagues         League[]
+
+  @@index([slug], map: "sports_slug_idx")
+  @@map("sports")
+}
+
+model Classification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sportId   String    @map("sport_id") @db.Uuid
+  slug      String
+  name      String
+  tier      SportTier @default(core)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  sport   Sport    @relation(fields: [sportId], references: [id], onDelete: Cascade)
+  seasons Season[]
+  leagues League[]
+
+  @@unique([sportId, slug], map: "classifications_sport_slug_idx")
+  @@index([tier], map: "classifications_tier_idx")
+  @@map("classifications")
+}
+
+model Season {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classificationId String       @map("classification_id") @db.Uuid
+  year             Int
+  status           SeasonStatus @default(upcoming)
+  startDate        DateTime?    @map("start_date") @db.Timestamptz(6)
+  endDate          DateTime?    @map("end_date") @db.Timestamptz(6)
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  classification       Classification    @relation(fields: [classificationId], references: [id], onDelete: Cascade)
+  games                Game[]
+  leaguesAsCurrent     League[]          @relation("LeagueCurrentSeason")
+  leagueMembers        LeagueMember[]
+  leagueWeekSlates     LeagueWeekSlate[]
+  picks                Pick[]
+
+  @@unique([classificationId, year], map: "seasons_classification_year_idx")
+  @@index([status], map: "seasons_status_idx")
+  @@map("seasons")
+}
+
+model Game {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seasonId     String      @map("season_id") @db.Uuid
+  externalId   String      @map("external_id")
+  week         Int
+  homeTeam     String      @map("home_team")
+  awayTeam     String      @map("away_team")
+  homeTeamAbbr String?     @map("home_team_abbr")
+  awayTeamAbbr String?     @map("away_team_abbr")
+  startTime    DateTime    @map("start_time") @db.Timestamptz(6)
+  status       GameStatus  @default(scheduled)
+  homeScore    Int?        @map("home_score")
+  awayScore    Int?        @map("away_score")
+  winner       GameWinner?
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  season              Season                @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  leagueWeekSlateGames  LeagueWeekSlateGame[]
+  picks               Pick[]
+
+  @@unique([seasonId, externalId], map: "games_season_external_id_idx")
+  @@index([seasonId, week], map: "games_season_week_idx")
+  @@index([startTime], map: "games_start_time_idx")
+  @@index([status], map: "games_status_idx")
+  @@map("games")
+}
+
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clerkId         String    @unique @map("clerk_id")
+  email           String
+  username        String
+  avatarUrl       String?   @map("avatar_url")
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  preferences          UserPreference?
+  leaguesAsCommissioner League[]
+  leagueMembers        LeagueMember[]
+  leagueWaitlist       LeagueWaitlist[]
+  picks                Pick[]
+  notificationLogs     NotificationLog[]
+
+  @@index([clerkId], map: "users_clerk_id_idx")
+  @@index([username], map: "users_username_idx")
+  @@map("users")
+}
+
+model UserPreference {
+  userId    String   @id @map("user_id") @db.Uuid
+  theme     Theme    @default(system)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model League {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  sportId         String       @map("sport_id") @db.Uuid
+  classificationId String      @map("classification_id") @db.Uuid
+  currentSeasonId String?      @map("current_season_id") @db.Uuid
+  commissionerId  String       @map("commissioner_id") @db.Uuid
+  inviteCode      String       @unique @map("invite_code")
+  isPublic        Boolean      @default(true) @map("is_public")
+  passwordHash    String?      @map("password_hash")
+  maxMembers      Int          @default(10) @map("max_members")
+  memberCount     Int          @default(1) @map("member_count")
+  tiePolicy       TiePolicy    @default(no_points) @map("tie_policy")
+  status          LeagueStatus @default(setup)
+  deletedAt       DateTime?    @map("deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  sport           Sport             @relation(fields: [sportId], references: [id], onDelete: NoAction)
+  classification  Classification    @relation(fields: [classificationId], references: [id], onDelete: NoAction)
+  currentSeason   Season?           @relation("LeagueCurrentSeason", fields: [currentSeasonId], references: [id], onDelete: NoAction)
+  commissioner    User              @relation(fields: [commissionerId], references: [id], onDelete: NoAction)
+  members         LeagueMember[]
+  waitlist        LeagueWaitlist[]
+  weekSlates      LeagueWeekSlate[]
+  picks           Pick[]
+  notificationLogs NotificationLog[]
+  boosts          LeagueBoost[]
+
+  @@index([inviteCode], map: "leagues_invite_code_idx")
+  @@index([commissionerId], map: "leagues_commissioner_id_idx")
+  @@index([status], map: "leagues_status_idx")
+  @@index([isPublic], map: "leagues_public_idx")
+  @@index([sportId, classificationId], map: "leagues_sport_classification_idx")
+  @@map("leagues")
+}
+
+model LeagueMember {
+  id       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId String     @map("league_id") @db.Uuid
+  userId   String     @map("user_id") @db.Uuid
+  seasonId String     @map("season_id") @db.Uuid
+  role     MemberRole @default(member)
+  joinedAt DateTime   @default(now()) @map("joined_at") @db.Timestamptz(6)
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId, seasonId], map: "league_members_league_user_season_idx")
+  @@index([leagueId], map: "league_members_league_id_idx")
+  @@index([userId], map: "league_members_user_id_idx")
+  @@map("league_members")
+}
+
+model LeagueWaitlist {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId  String    @map("league_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  position  Int
+  invitedAt DateTime? @map("invited_at") @db.Timestamptz(6)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId], map: "league_waitlist_league_user_idx")
+  @@index([leagueId, position], map: "league_waitlist_league_position_idx")
+  @@map("league_waitlist")
+}
+
+model LeagueWeekSlate {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId  String    @map("league_id") @db.Uuid
+  seasonId  String    @map("season_id") @db.Uuid
+  week      Int
+  lockedAt  DateTime? @map("locked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  league League                @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  season Season                @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  games  LeagueWeekSlateGame[]
+
+  @@unique([leagueId, seasonId, week], map: "league_week_slates_league_season_week_idx")
+  @@index([leagueId], map: "league_week_slates_league_id_idx")
+  @@map("league_week_slates")
+}
+
+model LeagueWeekSlateGame {
+  slateId String @map("slate_id") @db.Uuid
+  gameId  String @map("game_id") @db.Uuid
+
+  slate LeagueWeekSlate @relation(fields: [slateId], references: [id], onDelete: Cascade)
+  game  Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([slateId, gameId])
+  @@index([gameId], map: "league_week_slate_games_game_id_idx")
+  @@map("league_week_slate_games")
+}
+
+model Pick {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId   String     @map("league_id") @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  gameId     String     @map("game_id") @db.Uuid
+  seasonId   String     @map("season_id") @db.Uuid
+  week       Int
+  pickedTeam PickedTeam @map("picked_team")
+  isCorrect  Boolean?   @map("is_correct")
+  lockedAt   DateTime?  @map("locked_at") @db.Timestamptz(6)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId, gameId], map: "picks_league_user_game_idx")
+  @@index([leagueId, week], map: "picks_league_week_idx")
+  @@index([userId], map: "picks_user_id_idx")
+  @@map("picks")
+}
+
+model NotificationLog {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  leagueId    String?          @map("league_id") @db.Uuid
+  type        NotificationType
+  referenceId String           @map("reference_id")
+  sentAt      DateTime         @default(now()) @map("sent_at") @db.Timestamptz(6)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league League? @relation(fields: [leagueId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, leagueId, type, referenceId], map: "notification_log_dedup_idx")
+  @@index([userId], map: "notification_log_user_id_idx")
+  @@map("notification_log")
+}
+
+/// Reserved for Option B per-league billing — not used in v0.2.0
+model LeagueBoost {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId    String          @map("league_id") @db.Uuid
+  type        LeagueBoostType
+  purchasedAt DateTime        @default(now()) @map("purchased_at") @db.Timestamptz(6)
+  expiresAt   DateTime?       @map("expires_at") @db.Timestamptz(6)
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId], map: "league_boosts_league_id_idx")
+  @@map("league_boosts")
+}

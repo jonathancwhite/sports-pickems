@@ -10,6 +10,7 @@
     "typecheck": "turbo typecheck",
     "db:generate": "pnpm --filter @callsheet/db db:generate",
     "db:migrate": "pnpm --filter @callsheet/db db:migrate",
+    "db:migrate:dev": "pnpm --filter @callsheet/db db:migrate:dev",
     "db:seed": "pnpm --filter @callsheet/db db:seed",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\""
@@ -28,6 +29,6 @@
     "node": ">=20"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": ["esbuild", "@prisma/client", "prisma", "@prisma/engines"]
   }
 }
