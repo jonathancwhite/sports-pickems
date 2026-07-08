@@ -182,10 +182,10 @@ league_boosts          # reserved for Option B billing (empty usage)
 
 ## Sprint definition of done
 
-- [ ] `docker compose up` starts Postgres
-- [ ] `pnpm install && turbo dev` runs web + api without errors
-- [ ] Migrations apply on fresh DB
-- [ ] Seed data present (Football / NCAA FBS)
-- [ ] Legacy code removed
-- [ ] `.env.example` complete
-- [ ] All stories checked off
+- [x] `docker compose up` starts Postgres
+- [x] `pnpm install && turbo dev` runs web + api without errors
+- [x] Migrations apply on fresh DB
+- [x] Seed data present (Football / NCAA FBS)
+- [x] Legacy code removed
+- [x] `.env.example` complete
+- [x] All stories checked off
