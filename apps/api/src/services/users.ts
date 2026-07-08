@@ -33,9 +33,10 @@ export async function updateUserPreferences(
     return null;
   }
 
-  await prisma.userPreference.update({
+  await prisma.userPreference.upsert({
     where: { userId: existing.id },
-    data: { theme: preferences.theme },
+    create: { userId: existing.id, theme: preferences.theme },
+    update: { theme: preferences.theme },
   });
 
   return findUserByClerkId(clerkId);
