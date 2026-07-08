@@ -15,8 +15,8 @@
     "typecheck": "prisma generate && tsc --noEmit",
     "lint": "eslint src/",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate": "sh -c 'DATABASE_URL=\"${DATABASE_URL_DIRECT:-$DATABASE_URL}\" prisma migrate deploy'",
+    "db:migrate:dev": "sh -c 'DATABASE_URL=\"${DATABASE_URL_DIRECT:-$DATABASE_URL}\" prisma migrate dev'",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
