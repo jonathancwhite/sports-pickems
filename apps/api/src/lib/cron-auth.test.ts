@@ -40,6 +40,12 @@ describe("verifyCronSecret", () => {
     expect(verifyCronSecret({ headers: {} })).toBe(true);
   });
 
+  it("rejects requests when CRON_SECRET is unset and NODE_ENV is unset", () => {
+    delete process.env.CRON_SECRET;
+    delete process.env.NODE_ENV;
+    expect(verifyCronSecret({ headers: {} })).toBe(false);
+  });
+
   it("rejects requests in production when CRON_SECRET is unset", () => {
     delete process.env.CRON_SECRET;
     process.env.NODE_ENV = "production";

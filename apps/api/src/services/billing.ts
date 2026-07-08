@@ -1,6 +1,5 @@
 import { prisma } from "@callsheet/db";
 import {
-  FREE_PLAN_SLUG,
   FREE_TIER_MAX_LEAGUES,
   FREE_TIER_MAX_MEMBERS,
   PRO_PLAN_SLUG,
@@ -64,8 +63,7 @@ export async function getUserPlan(clerkId: string, has?: HasFunction): Promise<U
   if (has) {
     const cached = await getCachedUserPlan(clerkId);
     if (cached === "pro") {
-      await refreshUserPlanFromClerk(clerkId);
-      return getCachedUserPlan(clerkId);
+      return refreshUserPlanFromClerk(clerkId);
     }
     return "free";
   }
@@ -187,6 +185,7 @@ export async function refreshUserPlanFromClerk(clerkId: string): Promise<UserPla
     await updateCachedUserPlan(clerkId, plan, proSince);
     return plan;
   } catch {
-    return FREE_PLAN_SLUG;
+    await updateCachedUserPlan(clerkId, "free", null);
+    return "free";
   }
 }
