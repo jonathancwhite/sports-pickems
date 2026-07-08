@@ -29,28 +29,32 @@ usersRouter.get("/me", async (req, res, next) => {
   }
 });
 
-usersRouter.put("/me/preferences", async (req, res) => {
-  const { userId: clerkId } = getAuth(req);
-  if (!clerkId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+usersRouter.put("/me/preferences", async (req, res, next) => {
+  try {
+    const { userId: clerkId } = getAuth(req);
+    if (!clerkId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
-  const parsed = updatePreferencesSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid preferences", details: parsed.error.flatten() });
-    return;
-  }
+    const parsed = updatePreferencesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid preferences", details: parsed.error.flatten() });
+      return;
+    }
 
-  const user = await updateUserPreferences(clerkId, parsed.data);
-  if (!user) {
-    res.status(404).json({
-      error: "user_not_synced",
-      message: "Your account is being set up. Please retry in a few seconds.",
-      retryAfterMs: 2000,
-    });
-    return;
-  }
+    const user = await updateUserPreferences(clerkId, parsed.data);
+    if (!user) {
+      res.status(404).json({
+        error: "user_not_synced",
+        message: "Your account is being set up. Please retry in a few seconds.",
+        retryAfterMs: 2000,
+      });
+      return;
+    }
 
-  res.json(user);
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
 });
