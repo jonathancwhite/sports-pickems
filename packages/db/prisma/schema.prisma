@@ -62,8 +62,19 @@ enum NotificationType {
   waitlist_invite
   commissioner_transfer
   season_invite
+  season_ended
 
   @@map("notification_type")
+}
+
+enum CommissionerTransferStatus {
+  pending
+  accepted
+  declined
+  expired
+  cancelled
+
+  @@map("commissioner_transfer_status")
 }
 
 enum Theme {
@@ -72,6 +83,13 @@ enum Theme {
   system
 
   @@map("theme")
+}
+
+enum UserPlan {
+  free
+  pro
+
+  @@map("user_plan")
 }
 
 enum PickedTeam {
@@ -135,6 +153,7 @@ model Season {
   status           SeasonStatus @default(upcoming)
   startDate        DateTime?    @map("start_date") @db.Timestamptz(6)
   endDate          DateTime?    @map("end_date") @db.Timestamptz(6)
+  completedAt      DateTime?    @map("completed_at") @db.Timestamptz(6)
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
 
@@ -185,16 +204,20 @@ model User {
   username        String
   avatarUrl       String?   @map("avatar_url")
   emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  plan            UserPlan  @default(free)
+  proSince        DateTime? @map("pro_since") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  preferences          UserPreference?
-  leaguesAsCommissioner League[]
-  leagueMembers        LeagueMember[]
-  leagueWaitlist       LeagueWaitlist[]
-  picks                Pick[]
-  notificationLogs     NotificationLog[]
+  preferences               UserPreference?
+  leaguesAsCommissioner     League[]
+  leagueMembers             LeagueMember[]
+  leagueWaitlist            LeagueWaitlist[]
+  picks                     Pick[]
+  notificationLogs          NotificationLog[]
+  commissionerTransfersFrom CommissionerTransfer[] @relation("TransferFrom")
+  commissionerTransfersTo   CommissionerTransfer[] @relation("TransferTo")
 
   @@index([clerkId], map: "users_clerk_id_idx")
   @@index([username], map: "users_username_idx")
@@ -224,21 +247,23 @@ model League {
   maxMembers      Int          @default(10) @map("max_members")
   memberCount     Int          @default(1) @map("member_count")
   tiePolicy       TiePolicy    @default(no_points) @map("tie_policy")
-  status          LeagueStatus @default(setup)
-  deletedAt       DateTime?    @map("deleted_at") @db.Timestamptz(6)
-  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  status             LeagueStatus @default(setup)
+  countsTowardLimit  Boolean      @default(true) @map("counts_toward_limit")
+  deletedAt          DateTime?    @map("deleted_at") @db.Timestamptz(6)
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  sport           Sport             @relation(fields: [sportId], references: [id], onDelete: NoAction)
-  classification  Classification    @relation(fields: [classificationId], references: [id], onDelete: NoAction)
-  currentSeason   Season?           @relation("LeagueCurrentSeason", fields: [currentSeasonId], references: [id], onDelete: NoAction)
-  commissioner    User              @relation(fields: [commissionerId], references: [id], onDelete: NoAction)
-  members         LeagueMember[]
-  waitlist        LeagueWaitlist[]
-  weekSlates      LeagueWeekSlate[]
-  picks           Pick[]
-  notificationLogs NotificationLog[]
-  boosts          LeagueBoost[]
+  sport                Sport                 @relation(fields: [sportId], references: [id], onDelete: NoAction)
+  classification       Classification        @relation(fields: [classificationId], references: [id], onDelete: NoAction)
+  currentSeason        Season?               @relation("LeagueCurrentSeason", fields: [currentSeasonId], references: [id], onDelete: NoAction)
+  commissioner         User                  @relation(fields: [commissionerId], references: [id], onDelete: NoAction)
+  members              LeagueMember[]
+  waitlist             LeagueWaitlist[]
+  weekSlates           LeagueWeekSlate[]
+  picks                Pick[]
+  notificationLogs     NotificationLog[]
+  boosts               LeagueBoost[]
+  commissionerTransfers CommissionerTransfer[]
 
   @@index([inviteCode], map: "leagues_invite_code_idx")
   @@index([commissionerId], map: "leagues_commissioner_id_idx")
@@ -351,6 +376,25 @@ model NotificationLog {
   @@unique([userId, leagueId, type, referenceId], map: "notification_log_dedup_idx")
   @@index([userId], map: "notification_log_user_id_idx")
   @@map("notification_log")
+}
+
+model CommissionerTransfer {
+  id          String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId    String                     @map("league_id") @db.Uuid
+  fromUserId  String                     @map("from_user_id") @db.Uuid
+  toUserId    String                     @map("to_user_id") @db.Uuid
+  status      CommissionerTransferStatus @default(pending)
+  expiresAt   DateTime                   @map("expires_at") @db.Timestamptz(6)
+  respondedAt DateTime?                  @map("responded_at") @db.Timestamptz(6)
+  createdAt   DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  fromUser User   @relation("TransferFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User   @relation("TransferTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, status], map: "commissioner_transfers_league_status_idx")
+  @@index([toUserId, status], map: "commissioner_transfers_to_user_status_idx")
+  @@map("commissioner_transfers")
 }
 
 /// Reserved for Option B per-league billing — not used in v0.2.0

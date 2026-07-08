@@ -12,6 +12,9 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { WeekSelector } from "@/components/week-selector";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
+  useAcceptTransfer,
+  useDeclineTransfer,
+  useJoinSeason,
   useLeaveLeague,
   useLeague,
   useRemoveMember,
@@ -58,6 +61,9 @@ function LeagueDetailPage() {
     recentWeekLeaderboard?.entries.filter((entry) => entry.isWeekWinner) ?? [];
 
   const leaveLeague = useLeaveLeague();
+  const joinSeason = useJoinSeason();
+  const acceptTransfer = useAcceptTransfer();
+  const declineTransfer = useDeclineTransfer();
   const removeMember = useRemoveMember();
 
   if (isPending) {
@@ -79,9 +85,15 @@ function LeagueDetailPage() {
     league.status === "active" || league.season?.status === "active";
   const seasonUpcoming =
     league.season?.status === "upcoming" && league.status === "setup";
+  const isArchived = league.status === "archived";
+  const seasonCompleted = league.season?.status === "completed";
   const currentMembership = league.members.find(
     (member) => member.userId === currentUser?.id,
   );
+  const needsRejoin =
+    league.status === "setup" &&
+    league.season?.status === "upcoming" &&
+    league.isCurrentMember === false;
   const canLeave = currentMembership && !league.isCommissioner;
   const hasSlates = (slates?.slates.length ?? 0) > 0;
 
@@ -115,6 +127,33 @@ function LeagueDetailPage() {
       showSuccess(`Removed ${username}`);
     } catch (error) {
       showApiError(error, "Failed to remove member");
+    }
+  }
+
+  async function handleRejoin() {
+    try {
+      await joinSeason.mutateAsync(leagueId);
+      showSuccess("You rejoined the league for the new season");
+    } catch (error) {
+      showApiError(error, "Failed to rejoin league");
+    }
+  }
+
+  async function handleAcceptTransfer() {
+    try {
+      await acceptTransfer.mutateAsync(leagueId);
+      showSuccess("You are now the commissioner");
+    } catch (error) {
+      showApiError(error, "Failed to accept transfer");
+    }
+  }
+
+  async function handleDeclineTransfer() {
+    try {
+      await declineTransfer.mutateAsync(leagueId);
+      showSuccess("Transfer declined");
+    } catch (error) {
+      showApiError(error, "Failed to decline transfer");
     }
   }
 
@@ -178,6 +217,61 @@ function LeagueDetailPage() {
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
           <span className="font-medium">Week {lastCompletedWeek} winner: </span>
           {weekWinners.map((winner) => winner.username).join(", ")}
+        </div>
+      )}
+
+      {league.pendingTransferForUser && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-4 text-sm">
+          <p className="font-medium">
+            You&apos;ve been asked to become commissioner by{" "}
+            {league.pendingTransferForUser.fromUsername}
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            Expires {new Date(league.pendingTransferForUser.expiresAt).toLocaleDateString()}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={handleAcceptTransfer}
+              disabled={acceptTransfer.isPending}
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              onClick={handleDeclineTransfer}
+              disabled={declineTransfer.isPending}
+              className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
+            >
+              Decline
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isArchived && seasonCompleted && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
+          <span className="font-medium">Season complete.</span>{" "}
+          {league.isCommissioner
+            ? "Visit Settings to start a new season."
+            : "The commissioner can start a new season when ready."}
+        </div>
+      )}
+
+      {needsRejoin && (
+        <div className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm">
+            A new season is starting — rejoin to keep competing with your league.
+          </p>
+          <button
+            type="button"
+            onClick={handleRejoin}
+            disabled={joinSeason.isPending}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {joinSeason.isPending ? "Joining…" : "Rejoin league"}
+          </button>
         </div>
       )}
 

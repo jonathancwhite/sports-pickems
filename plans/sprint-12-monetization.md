@@ -16,16 +16,16 @@
 **So that** users can subscribe to Pro
 
 **Acceptance criteria:**
-- [ ] Clerk Dashboard: Billing enabled, Stripe connected
-- [ ] Plan: `free` — default for all users, $0
-- [ ] Plan: `pro` — $6.99/mo or $59/yr (exact price finalized here)
-- [ ] Features defined in Clerk:
+- [x] Clerk Dashboard: Billing enabled, Stripe connected
+- [x] Plan: `free` — default for all users, $0
+- [x] Plan: `pro` — $6.99/mo or $59/yr (exact price finalized here)
+- [x] Features defined in Clerk:
   - `unlimited_leagues` — Pro only
   - `large_leagues` — Pro only (>10 members)
   - `beta_sports` — Pro only
   - `no_ads` — Pro only
-- [ ] Clerk `<PricingTable />` or custom pricing page component
-- [ ] Webhook: `subscription.created`, `subscription.updated`, `subscription.deleted` → log/update user tier in DB (optional cache)
+- [x] Clerk `<PricingTable />` or custom pricing page component
+- [x] Webhook: `subscription.created`, `subscription.updated`, `subscription.deleted` → log/update user tier in DB (optional cache)
 
 ---
 
@@ -36,12 +36,12 @@
 **So that** free users can't bypass restrictions
 
 **Acceptance criteria:**
-- [ ] Helper: `getUserPlan(userId)` — checks Clerk `has({ plan: 'pro' })` or cached DB value
-- [ ] Create league: free users limited to 2 active leagues (already in Sprint 04; now also check Pro for unlimited)
-- [ ] Create league: `maxMembers` capped at 10 for free; up to 50 for Pro
-- [ ] Create league: beta classifications rejected for free users (403 + upgrade message)
-- [ ] Join league: no restriction (joining is always free)
-- [ ] All 403 responses include `{ code: "UPGRADE_REQUIRED", message: "...", upgradeUrl: "/settings/billing" }`
+- [x] Helper: `getUserPlan(userId)` — checks Clerk `has({ plan: 'pro' })` or cached DB value
+- [x] Create league: free users limited to 2 active leagues (already in Sprint 04; now also check Pro for unlimited)
+- [x] Create league: `maxMembers` capped at 10 for free; up to 50 for Pro
+- [x] Create league: beta classifications rejected for free users (403 + upgrade message)
+- [x] Join league: no restriction (joining is always free)
+- [x] All 403 responses include `{ code: "UPGRADE_REQUIRED", message: "...", upgradeUrl: "/settings/billing" }`
 
 ---
 
@@ -52,11 +52,11 @@
 **So that** I know how to unlock more features
 
 **Acceptance criteria:**
-- [ ] Create league wizard: if at 2-league limit → upgrade CTA instead of form
-- [ ] Max members slider: capped at 10 for free; "Upgrade to Pro for up to 50" label
-- [ ] Beta sports in sport selector: greyed out with "Pro" badge
-- [ ] Subtle upgrade banner on dashboard for free users (dismissible)
-- [ ] No third-party ad network — only self-promotion for Pro
+- [x] Create league wizard: if at 2-league limit → upgrade CTA instead of form
+- [x] Max members slider: capped at 10 for free; "Upgrade to Pro for up to 50" label
+- [x] Beta sports in sport selector: greyed out with "Pro" badge
+- [x] Subtle upgrade banner on dashboard for free users (dismissible)
+- [x] No third-party ad network — only self-promotion for Pro
 
 ---
 
@@ -67,12 +67,12 @@
 **So that** I can upgrade, downgrade, or cancel
 
 **Acceptance criteria:**
-- [ ] `/settings/billing` route
-- [ ] Shows current plan: Free or Pro
-- [ ] Pro users: manage subscription via Clerk `<SubscriptionDetailsButton />`
-- [ ] Free users: pricing table with upgrade CTA
-- [ ] After upgrade: immediate feature unlock (no page reload needed — Clerk session refresh)
-- [ ] Annual vs monthly toggle on pricing table
+- [x] `/settings/billing` route
+- [x] Shows current plan: Free or Pro
+- [x] Pro users: manage subscription via Clerk `<SubscriptionDetailsButton />`
+- [x] Free users: pricing table with upgrade CTA
+- [x] After upgrade: immediate feature unlock (no page reload needed — Clerk session refresh)
+- [x] Annual vs monthly toggle on pricing table
 
 ---
 
@@ -83,13 +83,13 @@
 **So that** we can add Option B billing later without a migration
 
 **Acceptance criteria:**
-- [ ] `league_boosts` table populated in Sprint 01 schema:
+- [x] `league_boosts` table populated in Sprint 01 schema:
   ```
   league_boosts (id, league_id, type, purchased_at, expires_at)
   type: 'member_cap' | 'beta_sport'
   ```
-- [ ] No API or UI for boosts in this sprint
-- [ ] Comment in schema: "Reserved for Option B per-league billing"
+- [x] No API or UI for boosts in this sprint
+- [x] Comment in schema: "Reserved for Option B per-league billing"
 
 ---
 
@@ -100,9 +100,9 @@
 **So that** I feel valued
 
 **Acceptance criteria:**
-- [ ] Pro badge on user avatar in header (small crown or "Pro" pill)
-- [ ] Pro badge on league cards for leagues created by Pro users (optional)
-- [ ] Settings page shows "Pro member since {date}"
+- [x] Pro badge on user avatar in header (small crown or "Pro" pill)
+- [x] Pro badge on league cards for leagues created by Pro users (optional)
+- [x] Settings page shows "Pro member since {date}"
 
 ---
 
@@ -120,10 +120,10 @@ No new endpoints — gating added to existing endpoints. Billing managed by Cler
 
 ## Sprint definition of done
 
-- [ ] Clerk Billing configured with Free and Pro plans
-- [ ] Free tier limits enforced on API (2 leagues, 10 members, core sports only)
-- [ ] Pro users can create unlimited leagues with up to 50 members
-- [ ] Upgrade prompts shown at limit points
-- [ ] Billing settings page functional
-- [ ] `league_boosts` table exists (schema only)
-- [ ] All stories checked off
+- [x] Clerk Billing configured with Free and Pro plans
+- [x] Free tier limits enforced on API (2 leagues, 10 members, core sports only)
+- [x] Pro users can create unlimited leagues with up to 50 members
+- [x] Upgrade prompts shown at limit points
+- [x] Billing settings page functional
+- [x] `league_boosts` table exists (schema only)
+- [x] All stories checked off

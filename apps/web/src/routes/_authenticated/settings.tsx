@@ -1,10 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { CreditCard, ExternalLink, User } from "lucide-react";
 import { useClerk } from "@clerk/clerk-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { ProBadge } from "@/components/pro-badge";
 import { getStoredTheme } from "@/components/theme-provider";
+import { useUserBilling } from "@/hooks/use-billing";
 import { useCurrentUser, useUpdateTheme } from "@/hooks/use-current-user";
+import { useUserPlan } from "@/hooks/use-user-plan";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -13,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const { openUserProfile } = useClerk();
   const { data: user, isPending } = useCurrentUser();
+  const { isPro } = useUserPlan();
+  const { data: billing } = useUserBilling();
   const updateTheme = useUpdateTheme();
   const theme = user?.preferences.theme ?? getStoredTheme();
 
@@ -80,11 +85,23 @@ function SettingsPage() {
           <CreditCard className="size-5 text-primary" aria-hidden />
           <h2 className="font-medium">Billing</h2>
         </div>
-        <div className="px-6 py-4">
-          <p className="text-sm text-muted-foreground">
-            Subscription and payment management will be available in a future update.
-          </p>
-          <p className="mt-2 text-sm font-medium text-muted-foreground">Coming soon</p>
+        <div className="space-y-4 px-6 py-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-muted-foreground">Current plan</p>
+            {isPro ? <ProBadge /> : <span className="text-sm font-medium">Free</span>}
+          </div>
+          {isPro && billing?.proSince && (
+            <p className="text-sm text-muted-foreground">
+              Pro member since {new Date(billing.proSince).toLocaleDateString()}
+            </p>
+          )}
+          <Link
+            to="/settings/billing"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            Manage billing
+            <ExternalLink className="size-4" aria-hidden />
+          </Link>
         </div>
       </section>
     </div>
