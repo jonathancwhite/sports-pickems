@@ -1,6 +1,7 @@
 const ESPN_BASE_URL = "https://site.api.espn.com/apis/site/v2";
 
 const MIN_REQUEST_INTERVAL_MS = 200;
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 
 let lastRequestAt = 0;
 
@@ -27,6 +28,8 @@ async function throttle(): Promise<void> {
 export interface EspnFetchOptions {
   /** Override fetch for testing */
   fetchFn?: typeof fetch;
+  /** Request timeout in milliseconds (default: 30s) */
+  timeoutMs?: number;
 }
 
 export async function espnFetch<T>(
@@ -35,6 +38,7 @@ export async function espnFetch<T>(
   options: EspnFetchOptions = {},
 ): Promise<T> {
   const fetchFn = options.fetchFn ?? fetch;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
   const url = new URL(`${ESPN_BASE_URL}${path}`);
 
   for (const [key, value] of Object.entries(params)) {
@@ -45,14 +49,28 @@ export async function espnFetch<T>(
 
   await throttle();
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
   let response: Response;
   try {
     response = await fetchFn(url.toString(), {
       headers: { Accept: "application/json" },
+      signal: controller.signal,
     });
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new EspnApiError(
+        `ESPN request timed out after ${timeoutMs}ms`,
+        undefined,
+        url.toString(),
+      );
+    }
+
     const message = error instanceof Error ? error.message : "Network error";
     throw new EspnApiError(`ESPN request failed: ${message}`, undefined, url.toString());
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!response.ok) {
