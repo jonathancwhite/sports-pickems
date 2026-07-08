@@ -12,3 +12,15 @@ export function getWebBaseUrl(): string {
 export function getPicksUrl(leagueId: string): string {
   return `${getWebBaseUrl()}/leagues/${leagueId}/picks`;
 }
+
+export function getSeasonJoinUrl(leagueId: string): string {
+  return `${getWebBaseUrl()}/leagues/${leagueId}`;
+}
+
+export function getTransferAcceptUrl(leagueId: string): string {
+  return `${getWebBaseUrl()}/leagues/${leagueId}/settings`;
+}
+
+export function getLeagueSettingsUrl(leagueId: string): string {
+  return `${getWebBaseUrl()}/leagues/${leagueId}/settings`;
+}

@@ -4,6 +4,10 @@ import { spawnTask } from "@callsheet/tasks";
 import { processExpiredWaitlistInvites } from "../services/waitlist.js";
 import { syncGames, GamesServiceError } from "../services/games.js";
 import { scorePicks } from "../services/scoring.js";
+import {
+  processExpiredCommissionerTransfers,
+  processSeasonArchiving,
+} from "../services/season-lifecycle.js";
 
 export const cronRouter = Router();
 
@@ -45,6 +49,27 @@ cronRouter.post("/score-picks", async (req, res) => {
   res.json(result);
 });
 
+cronRouter.post("/season-archive", async (req, res) => {
+  if (!verifyCronSecret(req)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const archiving = await processSeasonArchiving();
+  const transfers = await processExpiredCommissionerTransfers();
+  res.json({ ...archiving, transfersExpired: transfers });
+});
+
+cronRouter.post("/transfer-expiry", async (req, res) => {
+  if (!verifyCronSecret(req)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const processed = await processExpiredCommissionerTransfers();
+  res.json({ processed });
+});
+
 cronRouter.post("/sync-games", async (req, res, next) => {
   if (!verifyCronSecret(req)) {
     res.status(401).json({ error: "Unauthorized" });
@@ -60,7 +85,8 @@ cronRouter.post("/sync-games", async (req, res, next) => {
 
     const result = await syncGames(parsed.data);
     const scoring = await scorePicks();
-    res.json({ ...result, scored: scoring.scored });
+    const archiving = await processSeasonArchiving();
+    res.json({ ...result, scored: scoring.scored, ...archiving });
   } catch (error) {
     if (error instanceof GamesServiceError) {
       res.status(error.status).json({

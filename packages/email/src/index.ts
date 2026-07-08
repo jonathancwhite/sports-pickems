@@ -255,3 +255,33 @@ export async function sendSeasonInviteEmail(
     html: seasonInviteEmailHtml(data),
   });
 }
+
+export interface SeasonEndedEmailData {
+  leagueName: string;
+  settingsUrl: string;
+}
+
+export function seasonEndedEmailHtml(data: SeasonEndedEmailData): string {
+  const leagueName = escapeHtml(data.leagueName);
+  const settingsUrl = escapeHtml(data.settingsUrl);
+
+  return emailLayout(`
+    <h2 style="margin: 0 0 12px; font-size: 18px;">Your season has ended</h2>
+    <p style="margin: 0 0 16px;">
+      All games are final in <strong>${leagueName}</strong>. Your league will be archived soon.
+    </p>
+    <p style="margin: 0 0 24px;">${ctaButton("Start a new season", settingsUrl)}</p>
+    <p style="margin: 0; font-size: 14px; color: #6b7280;">Previous season standings are saved in league history.</p>
+  `);
+}
+
+export async function sendSeasonEndedEmail(
+  to: string,
+  data: SeasonEndedEmailData,
+): Promise<void> {
+  await sendEmail({
+    to,
+    subject: `Season complete in ${data.leagueName} — start a new one?`,
+    html: seasonEndedEmailHtml(data),
+  });
+}

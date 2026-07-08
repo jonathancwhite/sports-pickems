@@ -1,4 +1,5 @@
 import type {
+  CommissionerTransfer,
   CreateLeagueInput,
   CurrentUser,
   GamesResponse,
@@ -6,6 +7,8 @@ import type {
   LeaderboardResponse,
   League,
   LeagueDetail,
+  LeagueSeasonsResponse,
+  LeagueSettings,
   MyLeaguesResponse,
   PickSummaryResponse,
   PicksResponse,
@@ -14,7 +17,10 @@ import type {
   SlateDetail,
   SlateListResponse,
   SportWithClassifications,
+  StartSeasonInput,
   SubmitPicksInput,
+  TransferCommissionerInput,
+  UpdateLeagueInput,
   UpdatePreferences,
   WaitlistResponse,
 } from "@callsheet/shared";
@@ -199,13 +205,53 @@ export function useApiClient() {
         `/api/leagues/${leagueId}/picks/${week}/summary`,
         getToken,
       ),
-    getSeasonLeaderboard: (leagueId: string) =>
-      apiFetch<LeaderboardResponse>(`/api/leagues/${leagueId}/leaderboard`, getToken),
-    getWeeklyLeaderboard: (leagueId: string, week: number) =>
-      apiFetch<LeaderboardResponse>(
-        `/api/leagues/${leagueId}/leaderboard/${week}`,
+    getSeasonLeaderboard: (leagueId: string, seasonId?: string) => {
+      const params = seasonId ? `?seasonId=${seasonId}` : "";
+      return apiFetch<LeaderboardResponse>(
+        `/api/leagues/${leagueId}/leaderboard${params}`,
         getToken,
-      ),
+      );
+    },
+    getWeeklyLeaderboard: (leagueId: string, week: number, seasonId?: string) => {
+      const params = seasonId ? `?seasonId=${seasonId}` : "";
+      return apiFetch<LeaderboardResponse>(
+        `/api/leagues/${leagueId}/leaderboard/${week}${params}`,
+        getToken,
+      );
+    },
+    getLeagueSeasons: (leagueId: string) =>
+      apiFetch<LeagueSeasonsResponse>(`/api/leagues/${leagueId}/seasons`, getToken),
+    startNewSeason: (leagueId: string, input: StartSeasonInput) =>
+      apiFetch<League>(`/api/leagues/${leagueId}/seasons`, getToken, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    joinSeason: (leagueId: string) =>
+      apiFetch<League>(`/api/leagues/${leagueId}/seasons/join`, getToken, {
+        method: "POST",
+      }),
+    getLeagueSettings: (leagueId: string) =>
+      apiFetch<LeagueSettings>(`/api/leagues/${leagueId}/settings`, getToken),
+    updateLeague: (leagueId: string, input: UpdateLeagueInput) =>
+      apiFetch<League>(`/api/leagues/${leagueId}`, getToken, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    deleteLeague: (leagueId: string) =>
+      apiFetch<void>(`/api/leagues/${leagueId}`, getToken, { method: "DELETE" }),
+    initiateTransfer: (leagueId: string, input: TransferCommissionerInput) =>
+      apiFetch<CommissionerTransfer>(`/api/leagues/${leagueId}/transfer`, getToken, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    acceptTransfer: (leagueId: string) =>
+      apiFetch<League>(`/api/leagues/${leagueId}/transfer/accept`, getToken, {
+        method: "POST",
+      }),
+    declineTransfer: (leagueId: string) =>
+      apiFetch<void>(`/api/leagues/${leagueId}/transfer/decline`, getToken, {
+        method: "POST",
+      }),
   };
 }
 

@@ -3,6 +3,7 @@ import type { SlateDetail, SlateListResponse } from "@callsheet/shared";
 import { spawnTask, type SlateChangeParams } from "@callsheet/tasks";
 import { MIN_SLATE_GAMES } from "@callsheet/shared";
 import { LeagueServiceError } from "./leagues.js";
+import { assertLeagueWritable } from "./season-lifecycle.js";
 import { lockPicksForStartedGames } from "./pick-locks.js";
 
 type SlateWithGames = {
@@ -38,7 +39,11 @@ async function findUserByClerkId(clerkId: string) {
   });
 }
 
-async function getLeagueContext(clerkId: string, leagueId: string) {
+export async function getLeagueContext(
+  clerkId: string,
+  leagueId: string,
+  seasonId?: string,
+) {
   const user = await findUserByClerkId(clerkId);
   if (!user) {
     throw new LeagueServiceError("User not found", 404, "user_not_synced");
@@ -53,15 +58,25 @@ async function getLeagueContext(clerkId: string, leagueId: string) {
     throw new LeagueServiceError("League not found", 404);
   }
 
-  if (!league.currentSeasonId || !league.currentSeason) {
+  const targetSeasonId = seasonId ?? league.currentSeasonId;
+  if (!targetSeasonId) {
     throw new LeagueServiceError("League season not configured", 500);
+  }
+
+  const season =
+    league.currentSeasonId === targetSeasonId && league.currentSeason
+      ? league.currentSeason
+      : await prisma.season.findUnique({ where: { id: targetSeasonId } });
+
+  if (!season) {
+    throw new LeagueServiceError("Season not found", 404);
   }
 
   const membership = await prisma.leagueMember.findFirst({
     where: {
       leagueId,
       userId: user.id,
-      seasonId: league.currentSeasonId,
+      seasonId: targetSeasonId,
     },
   });
 
@@ -69,7 +84,7 @@ async function getLeagueContext(clerkId: string, leagueId: string) {
     throw new LeagueServiceError("You are not a member of this league", 403);
   }
 
-  return { user, league, membership, season: league.currentSeason };
+  return { user, league, membership, season };
 }
 
 function isGameStarted(game: { startTime: Date; status: string }): boolean {
@@ -268,6 +283,8 @@ export async function setSlate(
   gameIds: string[],
 ): Promise<SlateDetail> {
   const { league, membership, season } = await getLeagueContext(clerkId, leagueId);
+
+  assertLeagueWritable(league);
 
   if (membership.role !== "commissioner") {
     throw new LeagueServiceError("Only the commissioner can set the slate", 403);
@@ -532,4 +549,4 @@ export async function getCurrentWeekForSeason(seasonId: string): Promise<number>
   return latestGame?.week ?? 1;
 }
 
-export { getLeagueContext, isGameStarted, isSlateLockedByGames, ensureSlateLocked };
+export { isGameStarted, isSlateLockedByGames, ensureSlateLocked };
