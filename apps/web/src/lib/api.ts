@@ -1,13 +1,19 @@
 import type {
   CreateLeagueInput,
   CurrentUser,
+  GamesResponse,
   InvitePreview,
   League,
   LeagueDetail,
   MyLeaguesResponse,
+  PickSummaryResponse,
+  PicksResponse,
   PublicLeaguesQuery,
   PublicLeaguesResponse,
+  SlateDetail,
+  SlateListResponse,
   SportWithClassifications,
+  SubmitPicksInput,
   UpdatePreferences,
   WaitlistResponse,
 } from "@callsheet/shared";
@@ -148,6 +154,50 @@ export function useApiClient() {
       apiFetch<LeagueDetail>(`/api/leagues/${leagueId}/members/${userId}`, getToken, {
         method: "DELETE",
       }),
+    getGames: (seasonId: string, week: number, classificationId?: string) => {
+      const params = new URLSearchParams({
+        seasonId,
+        week: String(week),
+      });
+      if (classificationId) {
+        params.set("classificationId", classificationId);
+      }
+      return apiFetch<GamesResponse>(`/api/games?${params.toString()}`, getToken);
+    },
+    getSlates: (leagueId: string) =>
+      apiFetch<SlateListResponse>(`/api/leagues/${leagueId}/slates`, getToken),
+    getSlate: (leagueId: string, week: number, includePicks = false) => {
+      const params = includePicks ? "?includePicks=true" : "";
+      return apiFetch<SlateDetail>(
+        `/api/leagues/${leagueId}/slates/${week}${params}`,
+        getToken,
+      );
+    },
+    setSlate: (leagueId: string, week: number, gameIds: string[]) =>
+      apiFetch<SlateDetail>(`/api/leagues/${leagueId}/slates/${week}`, getToken, {
+        method: "PUT",
+        body: JSON.stringify({ gameIds }),
+      }),
+    getPicks: (leagueId: string, week: number, options?: { userId?: string; all?: boolean }) => {
+      const params = new URLSearchParams();
+      if (options?.userId) params.set("userId", options.userId);
+      if (options?.all) params.set("all", "true");
+      const qs = params.toString();
+      return apiFetch<PicksResponse>(
+        `/api/leagues/${leagueId}/picks/${week}${qs ? `?${qs}` : ""}`,
+        getToken,
+      );
+    },
+    submitPicks: (leagueId: string, week: number, input: SubmitPicksInput) =>
+      apiFetch<PicksResponse>(`/api/leagues/${leagueId}/picks/${week}`, getToken, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      }),
+    getPickSummary: (leagueId: string, week: number) =>
+      apiFetch<PickSummaryResponse>(
+        `/api/leagues/${leagueId}/picks/${week}/summary`,
+        getToken,
+      ),
   };
 }
 

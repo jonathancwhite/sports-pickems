@@ -55,6 +55,38 @@ export {
 export { EspnApiError } from "./sports/espn/client.js";
 
 export {
+  MIN_SLATE_GAMES,
+  setSlateSchema,
+  slateDetailSchema,
+  slateGameSchema,
+  slateListResponseSchema,
+  slateSummarySchema,
+  type SetSlateInput,
+  type SlateDetail,
+  type SlateGame,
+  type SlateListResponse,
+  type SlateSummary,
+} from "./slates.js";
+
+export {
+  pickInputSchema,
+  pickSchema,
+  pickSummaryEntrySchema,
+  pickSummaryResponseSchema,
+  pickSummaryStatusSchema,
+  pickedTeamSchema,
+  picksResponseSchema,
+  submitPicksSchema,
+  type Pick,
+  type PickSummaryEntry,
+  type PickSummaryResponse,
+  type PickSummaryStatus,
+  type PickedTeam,
+  type PicksResponse,
+  type SubmitPicksInput,
+} from "./picks.js";
+
+export {
   createLeagueSchema,
   joinLeagueSchema,
   leagueDetailSchema,

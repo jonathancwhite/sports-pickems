@@ -21,6 +21,8 @@ import { Route as PublicInviteCodeRouteImport } from './routes/_public/invite.$c
 import { Route as AuthenticatedLeaguesNewRouteImport } from './routes/_authenticated/leagues/new'
 import { Route as AuthenticatedLeaguesMyRouteImport } from './routes/_authenticated/leagues/my'
 import { Route as AuthenticatedLeaguesLeagueIdIndexRouteImport } from './routes/_authenticated/leagues/$leagueId/index'
+import { Route as AuthenticatedLeaguesLeagueIdScheduleRouteImport } from './routes/_authenticated/leagues/$leagueId/schedule'
+import { Route as AuthenticatedLeaguesLeagueIdPicksRouteImport } from './routes/_authenticated/leagues/$leagueId/picks'
 import { Route as AuthenticatedLeaguesLeagueIdInviteRouteImport } from './routes/_authenticated/leagues/$leagueId/invite'
 
 const PublicRoute = PublicRouteImport.update({
@@ -83,6 +85,18 @@ const AuthenticatedLeaguesLeagueIdIndexRoute =
     path: '/leagues/$leagueId/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedLeaguesLeagueIdScheduleRoute =
+  AuthenticatedLeaguesLeagueIdScheduleRouteImport.update({
+    id: '/leagues/$leagueId/schedule',
+    path: '/leagues/$leagueId/schedule',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedLeaguesLeagueIdPicksRoute =
+  AuthenticatedLeaguesLeagueIdPicksRouteImport.update({
+    id: '/leagues/$leagueId/picks',
+    path: '/leagues/$leagueId/picks',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedLeaguesLeagueIdInviteRoute =
   AuthenticatedLeaguesLeagueIdInviteRouteImport.update({
     id: '/leagues/$leagueId/invite',
@@ -101,6 +115,8 @@ export interface FileRoutesByFullPath {
   '/invite/$code': typeof PublicInviteCodeRoute
   '/leagues/': typeof AuthenticatedLeaguesIndexRoute
   '/leagues/$leagueId/invite': typeof AuthenticatedLeaguesLeagueIdInviteRoute
+  '/leagues/$leagueId/picks': typeof AuthenticatedLeaguesLeagueIdPicksRoute
+  '/leagues/$leagueId/schedule': typeof AuthenticatedLeaguesLeagueIdScheduleRoute
   '/leagues/$leagueId/': typeof AuthenticatedLeaguesLeagueIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -114,6 +130,8 @@ export interface FileRoutesByTo {
   '/invite/$code': typeof PublicInviteCodeRoute
   '/leagues': typeof AuthenticatedLeaguesIndexRoute
   '/leagues/$leagueId/invite': typeof AuthenticatedLeaguesLeagueIdInviteRoute
+  '/leagues/$leagueId/picks': typeof AuthenticatedLeaguesLeagueIdPicksRoute
+  '/leagues/$leagueId/schedule': typeof AuthenticatedLeaguesLeagueIdScheduleRoute
   '/leagues/$leagueId': typeof AuthenticatedLeaguesLeagueIdIndexRoute
 }
 export interface FileRoutesById {
@@ -130,6 +148,8 @@ export interface FileRoutesById {
   '/_public/invite/$code': typeof PublicInviteCodeRoute
   '/_authenticated/leagues/': typeof AuthenticatedLeaguesIndexRoute
   '/_authenticated/leagues/$leagueId/invite': typeof AuthenticatedLeaguesLeagueIdInviteRoute
+  '/_authenticated/leagues/$leagueId/picks': typeof AuthenticatedLeaguesLeagueIdPicksRoute
+  '/_authenticated/leagues/$leagueId/schedule': typeof AuthenticatedLeaguesLeagueIdScheduleRoute
   '/_authenticated/leagues/$leagueId/': typeof AuthenticatedLeaguesLeagueIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -145,6 +165,8 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/leagues/'
     | '/leagues/$leagueId/invite'
+    | '/leagues/$leagueId/picks'
+    | '/leagues/$leagueId/schedule'
     | '/leagues/$leagueId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -158,6 +180,8 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/leagues'
     | '/leagues/$leagueId/invite'
+    | '/leagues/$leagueId/picks'
+    | '/leagues/$leagueId/schedule'
     | '/leagues/$leagueId'
   id:
     | '__root__'
@@ -173,6 +197,8 @@ export interface FileRouteTypes {
     | '/_public/invite/$code'
     | '/_authenticated/leagues/'
     | '/_authenticated/leagues/$leagueId/invite'
+    | '/_authenticated/leagues/$leagueId/picks'
+    | '/_authenticated/leagues/$leagueId/schedule'
     | '/_authenticated/leagues/$leagueId/'
   fileRoutesById: FileRoutesById
 }
@@ -267,6 +293,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaguesLeagueIdIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/leagues/$leagueId/schedule': {
+      id: '/_authenticated/leagues/$leagueId/schedule'
+      path: '/leagues/$leagueId/schedule'
+      fullPath: '/leagues/$leagueId/schedule'
+      preLoaderRoute: typeof AuthenticatedLeaguesLeagueIdScheduleRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/leagues/$leagueId/picks': {
+      id: '/_authenticated/leagues/$leagueId/picks'
+      path: '/leagues/$leagueId/picks'
+      fullPath: '/leagues/$leagueId/picks'
+      preLoaderRoute: typeof AuthenticatedLeaguesLeagueIdPicksRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/leagues/$leagueId/invite': {
       id: '/_authenticated/leagues/$leagueId/invite'
       path: '/leagues/$leagueId/invite'
@@ -284,6 +324,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedLeaguesNewRoute: typeof AuthenticatedLeaguesNewRoute
   AuthenticatedLeaguesIndexRoute: typeof AuthenticatedLeaguesIndexRoute
   AuthenticatedLeaguesLeagueIdInviteRoute: typeof AuthenticatedLeaguesLeagueIdInviteRoute
+  AuthenticatedLeaguesLeagueIdPicksRoute: typeof AuthenticatedLeaguesLeagueIdPicksRoute
+  AuthenticatedLeaguesLeagueIdScheduleRoute: typeof AuthenticatedLeaguesLeagueIdScheduleRoute
   AuthenticatedLeaguesLeagueIdIndexRoute: typeof AuthenticatedLeaguesLeagueIdIndexRoute
 }
 
@@ -295,6 +337,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedLeaguesIndexRoute: AuthenticatedLeaguesIndexRoute,
   AuthenticatedLeaguesLeagueIdInviteRoute:
     AuthenticatedLeaguesLeagueIdInviteRoute,
+  AuthenticatedLeaguesLeagueIdPicksRoute:
+    AuthenticatedLeaguesLeagueIdPicksRoute,
+  AuthenticatedLeaguesLeagueIdScheduleRoute:
+    AuthenticatedLeaguesLeagueIdScheduleRoute,
   AuthenticatedLeaguesLeagueIdIndexRoute:
     AuthenticatedLeaguesLeagueIdIndexRoute,
 }

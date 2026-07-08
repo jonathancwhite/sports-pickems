@@ -10,6 +10,7 @@ import {
   fetchFbsScoreboard,
   type MappedGame,
 } from "@callsheet/shared";
+import { lockSlatesForGame } from "./slates.js";
 
 const FBS_CLASSIFICATION_SLUG = "ncaa-fbs";
 const COMPLETED_GAME_RETENTION_DAYS = 7;
@@ -189,6 +190,17 @@ async function upsertMappedGame(
       updatedAt: new Date(),
     },
   });
+
+  const game = await prisma.game.findUniqueOrThrow({
+    where: {
+      seasonId_externalId: { seasonId, externalId: mapped.externalId },
+    },
+    select: { id: true },
+  });
+
+  if (mapped.status === "in_progress" || mapped.status === "final") {
+    await lockSlatesForGame(game.id);
+  }
 
   return existing ? "updated" : "created";
 }
