@@ -5,7 +5,7 @@ type SignInSearch = {
   redirect_url?: string;
 };
 
-export const Route = createFileRoute("/sign-in")({
+export const Route = createFileRoute("/_public/sign-in")({
   validateSearch: (search: Record<string, unknown>): SignInSearch => ({
     redirect_url:
       typeof search.redirect_url === "string" ? search.redirect_url : undefined,
@@ -15,12 +15,11 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignInPage() {
   const { redirect_url } = Route.useSearch();
-  // Only allow relative redirects to prevent open-redirect abuse
   const redirectUrl =
     redirect_url && redirect_url.startsWith("/") ? redirect_url : "/dashboard";
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
+    <div className="flex items-center justify-center px-4 py-12 sm:py-16">
       <SignIn
         routing="path"
         path="/sign-in"
@@ -28,6 +27,6 @@ function SignInPage() {
         fallbackRedirectUrl={redirectUrl}
         forceRedirectUrl={redirectUrl}
       />
-    </main>
+    </div>
   );
 }

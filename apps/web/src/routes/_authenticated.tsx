@@ -1,4 +1,6 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { AppShell } from "@/components/layouts/app-shell";
+import { RouteError } from "@/components/route-error";
 
 async function ensureSignedIn(pathname: string) {
   const clerk = window.Clerk;
@@ -23,12 +25,9 @@ export const Route = createFileRoute("/_authenticated")({
     await ensureSignedIn(location.pathname);
   },
   component: AuthenticatedLayout,
+  errorComponent: ({ error, reset }) => <RouteError error={error} reset={reset} />,
 });
 
 function AuthenticatedLayout() {
-  return (
-    <div className="min-h-screen bg-background">
-      <Outlet />
-    </div>
-  );
+  return <AppShell />;
 }

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Theme } from "@callsheet/shared";
 import { useAuth } from "@clerk/clerk-react";
 import { ApiError, useApiClient } from "@/lib/api";
+import { showApiError } from "@/lib/toast";
 
 export const CURRENT_USER_QUERY_KEY = ["currentUser"] as const;
 
@@ -51,10 +52,11 @@ export function useUpdateTheme() {
 
       return { previous };
     },
-    onError: (_error, _theme, context) => {
+    onError: (error, _theme, context) => {
       if (context?.previous) {
         queryClient.setQueryData(CURRENT_USER_QUERY_KEY, context.previous);
       }
+      showApiError(error, "Failed to update theme");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });

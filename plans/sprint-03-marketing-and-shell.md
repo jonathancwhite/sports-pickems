@@ -16,15 +16,15 @@
 **So that** I understand the product and want to sign up
 
 **Acceptance criteria:**
-- [ ] `/` renders full marketing page (public, no auth required)
-- [ ] Sections: Hero, How it works (3 steps), Features, CTA
-- [ ] Hero headline + subheadline communicate pick'em league concept
-- [ ] Primary CTA: "Get started" → `/sign-up`
-- [ ] Secondary CTA: "Sign in" → `/sign-in`
-- [ ] Royal blue accent on CTAs and highlights
-- [ ] Responsive: mobile, tablet, desktop
-- [ ] Dark and light mode both look good
-- [ ] No authenticated app chrome (sidebar) on landing page
+- [x] `/` renders full marketing page (public, no auth required)
+- [x] Sections: Hero, How it works (3 steps), Features, CTA
+- [x] Hero headline + subheadline communicate pick'em league concept
+- [x] Primary CTA: "Get started" → `/sign-up`
+- [x] Secondary CTA: "Sign in" → `/sign-in`
+- [x] Royal blue accent on CTAs and highlights
+- [x] Responsive: mobile, tablet, desktop
+- [x] Dark and light mode both look good
+- [x] No authenticated app chrome (sidebar) on landing page
 
 **Content guidance:**
 - Hero: "Pick games. Beat your friends."
@@ -40,10 +40,10 @@
 **So that** marketing and auth pages feel cohesive
 
 **Acceptance criteria:**
-- [ ] Public layout component: header (logo + sign in/up), footer
-- [ ] Callsheet logo/wordmark in header (text logo acceptable for now)
-- [ ] Used by: `/`, `/sign-in`, `/sign-up`, `/invite/:code`
-- [ ] Footer: copyright, links placeholder (Terms, Privacy — stub URLs ok)
+- [x] Public layout component: header (logo + sign in/up), footer
+- [x] Callsheet logo/wordmark in header (text logo acceptable for now)
+- [x] Used by: `/`, `/sign-in`, `/sign-up`, `/invite/:code`
+- [x] Footer: copyright, links placeholder (Terms, Privacy — stub URLs ok)
 
 ---
 
@@ -54,13 +54,13 @@
 **So that** I can navigate between dashboard, leagues, and settings
 
 **Acceptance criteria:**
-- [ ] App layout component: sidebar + main content area + header
-- [ ] Sidebar nav items: Dashboard, My Leagues, Browse Leagues, Settings
-- [ ] Header: user avatar (Clerk UserButton), theme toggle
-- [ ] Sidebar shows user's joined leagues (placeholder — populated in Sprint 04)
-- [ ] Active route highlighted in sidebar
-- [ ] Collapsible sidebar on mobile (hamburger menu)
-- [ ] Used by all protected routes
+- [x] App layout component: sidebar + main content area + header
+- [x] Sidebar nav items: Dashboard, My Leagues, Browse Leagues, Settings
+- [x] Header: user avatar (Clerk UserButton), theme toggle
+- [x] Sidebar shows user's joined leagues (placeholder — populated in Sprint 04)
+- [x] Active route highlighted in sidebar
+- [x] Collapsible sidebar on mobile (hamburger menu)
+- [x] Used by all protected routes
 
 ---
 
@@ -71,11 +71,11 @@
 **So that** I can manage my profile and theme
 
 **Acceptance criteria:**
-- [ ] `/settings` route with tabbed or sectioned layout
-- [ ] Account section: displays username, email (read-only from Clerk)
-- [ ] Preferences section: theme toggle (from Sprint 02)
-- [ ] Billing section: placeholder "Coming soon" (populated in Sprint 12)
-- [ ] Link to Clerk account management for password/email changes
+- [x] `/settings` route with tabbed or sectioned layout
+- [x] Account section: displays username, email (read-only from Clerk)
+- [x] Preferences section: theme toggle (from Sprint 02)
+- [x] Billing section: placeholder "Coming soon" (populated in Sprint 12)
+- [x] Link to Clerk account management for password/email changes
 
 ---
 
@@ -86,9 +86,9 @@
 **So that** broken links don't show a blank screen
 
 **Acceptance criteria:**
-- [ ] 404 page with "Page not found" message and link to dashboard/home
-- [ ] Error boundary on app layout catches render errors
-- [ ] API error toast pattern established (shadcn Sonner or toast)
+- [x] 404 page with "Page not found" message and link to dashboard/home
+- [x] Error boundary on app layout catches render errors
+- [x] API error toast pattern established (shadcn Sonner or toast)
 
 ---
 
@@ -99,19 +99,19 @@
 **So that** the app feels polished during data fetches
 
 **Acceptance criteria:**
-- [ ] Reusable `<LoadingSpinner />` component
-- [ ] Reusable `<EmptyState />` component (icon, title, description, CTA)
-- [ ] TanStack Query `isLoading` / `isPending` patterns used consistently
-- [ ] Skeleton loaders for list items (leagues list placeholder)
+- [x] Reusable `<LoadingSpinner />` component
+- [x] Reusable `<EmptyState />` component (icon, title, description, CTA)
+- [x] TanStack Query `isLoading` / `isPending` patterns used consistently
+- [x] Skeleton loaders for list items (leagues list placeholder)
 
 ---
 
 ## Sprint definition of done
 
-- [ ] Landing page live at `/` with royal blue branding
-- [ ] Public and authenticated layouts working
-- [ ] Sidebar navigation functional
-- [ ] Settings page with theme toggle
-- [ ] 404 page works
-- [ ] Responsive on mobile
-- [ ] All stories checked off
+- [x] Landing page live at `/` with royal blue branding
+- [x] Public and authenticated layouts working
+- [x] Sidebar navigation functional
+- [x] Settings page with theme toggle
+- [x] 404 page works
+- [x] Responsive on mobile
+- [x] All stories checked off
