@@ -44,9 +44,7 @@ export async function seed() {
       year: SEED_SEASON_YEAR,
       status: "upcoming",
     },
-    update: {
-      status: "upcoming",
-    },
+    update: {},
   });
 
   console.log(`Seeded: Football / NCAA FBS / ${SEED_SEASON_YEAR} season`);
