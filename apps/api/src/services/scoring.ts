@@ -11,17 +11,14 @@ async function scorePicksForGame(gameId: string): Promise<number> {
     return 0;
   }
 
-  const unscoredPicks = await prisma.pick.findMany({
-    where: {
-      gameId,
-      isCorrect: null,
-    },
+  const picks = await prisma.pick.findMany({
+    where: { gameId },
     include: {
       league: { select: { tiePolicy: true } },
     },
   });
 
-  if (unscoredPicks.length === 0) {
+  if (picks.length === 0) {
     return 0;
   }
 
@@ -29,12 +26,16 @@ async function scorePicksForGame(gameId: string): Promise<number> {
   let scored = 0;
 
   await prisma.$transaction(async (tx) => {
-    for (const pick of unscoredPicks) {
+    for (const pick of picks) {
       const isCorrect = computeIsCorrect(
         pick.pickedTeam,
         game.winner!,
         pick.league.tiePolicy,
       );
+
+      if (pick.isCorrect === isCorrect) {
+        continue;
+      }
 
       await tx.pick.update({
         where: { id: pick.id },
@@ -48,19 +49,17 @@ async function scorePicksForGame(gameId: string): Promise<number> {
 }
 
 export async function scorePicks(): Promise<ScorePicksResponse> {
-  const finalGamesWithUnscoredPicks = await prisma.game.findMany({
+  const finalGamesWithPicks = await prisma.game.findMany({
     where: {
       status: "final",
       winner: { not: null },
-      picks: {
-        some: { isCorrect: null },
-      },
+      picks: { some: {} },
     },
     select: { id: true },
   });
 
   let scored = 0;
-  for (const game of finalGamesWithUnscoredPicks) {
+  for (const game of finalGamesWithPicks) {
     scored += await scorePicksForGame(game.id);
   }
 

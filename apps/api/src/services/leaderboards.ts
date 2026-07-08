@@ -37,14 +37,60 @@ function computeMemberStats(
   return { correct, total, points };
 }
 
+async function getWeekMembershipCutoff(
+  leagueId: string,
+  seasonId: string,
+  week: number,
+): Promise<Date | null> {
+  const slate = await prisma.leagueWeekSlate.findUnique({
+    where: {
+      leagueId_seasonId_week: { leagueId, seasonId, week },
+    },
+    include: {
+      games: {
+        include: { game: { select: { startTime: true } } },
+      },
+    },
+  });
+
+  if (slate && slate.games.length > 0) {
+    return slate.games.reduce(
+      (earliest, entry) =>
+        entry.game.startTime < earliest ? entry.game.startTime : earliest,
+      slate.games[0]!.game.startTime,
+    );
+  }
+
+  const game = await prisma.game.findFirst({
+    where: { seasonId, week },
+    orderBy: { startTime: "asc" },
+    select: { startTime: true },
+  });
+
+  return game?.startTime ?? null;
+}
+
 async function buildLeaderboard(
   leagueId: string,
   seasonId: string,
   tiePolicy: TiePolicy,
   week?: number,
 ): Promise<LeaderboardEntry[]> {
+  const memberWhere: {
+    leagueId: string;
+    seasonId: string;
+    joinedAt?: { lte: Date };
+  } = { leagueId, seasonId };
+
+  if (week !== undefined) {
+    const cutoff = await getWeekMembershipCutoff(leagueId, seasonId, week);
+    if (cutoff) {
+      memberWhere.joinedAt = { lte: cutoff };
+    }
+  }
+
   const members = await prisma.leagueMember.findMany({
-    where: { leagueId, seasonId },
+    where: memberWhere,
     include: { user: { select: { id: true, username: true } } },
   });
 

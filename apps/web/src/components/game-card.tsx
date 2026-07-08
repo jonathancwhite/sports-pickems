@@ -30,7 +30,10 @@ export function GameCard({
 
   const awayPicks = otherPicks.filter((pick) => pick.pickedTeam === "away");
   const homePicks = otherPicks.filter((pick) => pick.pickedTeam === "home");
-  const hasPick = selectedTeam !== null && selectedTeam !== undefined;
+  const slatePickedTeam = "pickedTeam" in game ? game.pickedTeam : null;
+  const effectiveSelectedTeam = selectedTeam ?? slatePickedTeam;
+  const hasPick =
+    effectiveSelectedTeam !== null && effectiveSelectedTeam !== undefined;
   const isCorrect =
     "isCorrect" in game && game.isCorrect !== undefined ? game.isCorrect : null;
 
@@ -68,7 +71,7 @@ export function GameCard({
         <TeamButton
           label={game.awayTeam}
           abbr={game.awayTeamAbbr}
-          selected={selectedTeam === "away"}
+          selected={effectiveSelectedTeam === "away"}
           disabled={gameLocked || !onSelectTeam}
           onClick={() => onSelectTeam?.("away")}
           picks={awayPicks}
@@ -77,7 +80,7 @@ export function GameCard({
         <TeamButton
           label={game.homeTeam}
           abbr={game.homeTeamAbbr}
-          selected={selectedTeam === "home"}
+          selected={effectiveSelectedTeam === "home"}
           disabled={gameLocked || !onSelectTeam}
           onClick={() => onSelectTeam?.("home")}
           picks={homePicks}
