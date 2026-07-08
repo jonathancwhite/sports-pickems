@@ -341,6 +341,18 @@ Future beta classifications (D2 CFB, minor league baseball, etc.) tagged `tier: 
 
 ESPN-defined week integers. Stored on `games.week`.
 
+### Game status lifecycle
+
+| Status | Meaning | Pick locking |
+|--------|---------|--------------|
+| `scheduled` | Game not yet started | Picks allowed until week-level lock |
+| `in_progress` | Game has kicked off | **Picks locked for this game** regardless of week-level lock |
+| `final` | Game completed | Picks locked; `winner` set (`home`, `away`, or `tie`) |
+| `postponed` | Game delayed | Picks remain open until rescheduled kickoff |
+| `cancelled` | Game will not be played | Picks voided (handled in scoring sprint) |
+
+Status transitions are driven by ESPN sync (`POST /api/cron/sync-games`). When a game reaches `final`, `winner` is computed from scores.
+
 ---
 
 ## 12. League Rules & Membership
