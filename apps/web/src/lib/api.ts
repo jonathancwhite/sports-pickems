@@ -22,6 +22,7 @@ import type {
   TransferCommissionerInput,
   UpdateLeagueInput,
   UpdatePreferences,
+  UserBilling,
   WaitlistResponse,
 } from "@callsheet/shared";
 import { useAuth } from "@clerk/clerk-react";
@@ -113,6 +114,9 @@ export function useApiClient() {
 
   return {
     getCurrentUser: () => apiFetch<CurrentUser>("/api/users/me", getToken),
+    getUserBilling: () => apiFetch<UserBilling>("/api/users/me/billing", getToken),
+    getCreatedLeagueCount: () =>
+      apiFetch<{ count: number }>("/api/leagues/me/created-count", getToken),
     updatePreferences: (preferences: UpdatePreferences) =>
       apiFetch<CurrentUser>("/api/users/me/preferences", getToken, {
         method: "PUT",

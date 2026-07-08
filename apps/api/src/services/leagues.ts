@@ -8,9 +8,14 @@ import type {
   PublicLeaguesQuery,
   PublicLeaguesResponse,
 } from "@callsheet/shared";
-import { FREE_TIER_MAX_LEAGUES } from "@callsheet/shared";
 import bcrypt from "bcryptjs";
 import { customAlphabet } from "nanoid";
+import {
+  assertClassificationAllowed,
+  assertLeagueCreationAllowed,
+  assertMaxMembersAllowed,
+  type UserPlan,
+} from "./billing.js";
 import {
   clearUserWaitlistEntry,
   isSeasonLocked,
@@ -170,6 +175,7 @@ export class LeagueServiceError extends Error {
 export async function createLeague(
   clerkId: string,
   input: CreateLeagueInput,
+  plan: UserPlan,
 ): Promise<League> {
   const user = await findUserByClerkId(clerkId);
   if (!user) {
@@ -177,14 +183,8 @@ export async function createLeague(
   }
 
   const activeLeagueCount = await countActiveCreatedLeagues(user.id);
-  if (activeLeagueCount >= FREE_TIER_MAX_LEAGUES) {
-    throw new LeagueServiceError(
-      "Free accounts can create up to 2 active leagues. Upgrade to Pro for unlimited leagues.",
-      403,
-      "league_limit_reached",
-      { limit: FREE_TIER_MAX_LEAGUES },
-    );
-  }
+  assertLeagueCreationAllowed(plan, activeLeagueCount);
+  assertMaxMembersAllowed(plan, input.maxMembers);
 
   const classification = await prisma.classification.findFirst({
     where: {
@@ -199,6 +199,8 @@ export async function createLeague(
     throw new LeagueServiceError("Invalid sport or classification", 400);
   }
 
+  assertClassificationAllowed(plan, classification.tier);
+
   const inviteCode = await generateUniqueInviteCode();
   const currentYear = new Date().getFullYear();
   const season = await getOrCreateSeason(input.classificationId, currentYear);
@@ -212,14 +214,7 @@ export async function createLeague(
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id}))`;
 
     const lockedCount = await countActiveCreatedLeagues(user.id, tx);
-    if (lockedCount >= FREE_TIER_MAX_LEAGUES) {
-      throw new LeagueServiceError(
-        "Free accounts can create up to 2 active leagues. Upgrade to Pro for unlimited leagues.",
-        403,
-        "league_limit_reached",
-        { limit: FREE_TIER_MAX_LEAGUES },
-      );
-    }
+    assertLeagueCreationAllowed(plan, lockedCount);
 
     const created = await tx.league.create({
       data: {
