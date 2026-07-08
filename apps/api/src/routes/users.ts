@@ -5,24 +5,28 @@ import { findUserByClerkId, updateUserPreferences } from "../services/users.js";
 
 export const usersRouter = Router();
 
-usersRouter.get("/me", async (req, res) => {
-  const { userId: clerkId } = getAuth(req);
-  if (!clerkId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+usersRouter.get("/me", async (req, res, next) => {
+  try {
+    const { userId: clerkId } = getAuth(req);
+    if (!clerkId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
-  const user = await findUserByClerkId(clerkId);
-  if (!user) {
-    res.status(404).json({
-      error: "user_not_synced",
-      message: "Your account is being set up. Please retry in a few seconds.",
-      retryAfterMs: 2000,
-    });
-    return;
-  }
+    const user = await findUserByClerkId(clerkId);
+    if (!user) {
+      res.status(404).json({
+        error: "user_not_synced",
+        message: "Your account is being set up. Please retry in a few seconds.",
+        retryAfterMs: 2000,
+      });
+      return;
+    }
 
-  res.json(user);
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
 });
 
 usersRouter.put("/me/preferences", async (req, res) => {
