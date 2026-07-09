@@ -1,11 +1,7 @@
 name: Sync Games
 
+# Disabled until deployment — trigger manually via workflow_dispatch when ready
 on:
-  schedule:
-    # Daily at 6 AM UTC (off-season maintenance sync)
-    - cron: "0 6 * * *"
-    # Every 15 minutes on Saturdays (gameday score updates)
-    - cron: "*/15 * * * 6"
   workflow_dispatch:
 
 jobs:
