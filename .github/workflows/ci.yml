@@ -1,9 +1,8 @@
 name: CI
 
+# Disabled until deployment — trigger manually via workflow_dispatch when ready
 on:
-  push:
-    branches: [master, develop]
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
