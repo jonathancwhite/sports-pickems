@@ -1,9 +1,7 @@
 name: Waitlist Expiry
 
+# Disabled until deployment — trigger manually via workflow_dispatch when ready
 on:
-  schedule:
-    # Every hour — re-offer expired waitlist invites
-    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
