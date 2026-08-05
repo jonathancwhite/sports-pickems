@@ -9,6 +9,7 @@ Sports pick'em platform — create leagues, invite friends, compete to predict g
 | Doc | Description |
 |-----|-------------|
 | [Architecture & Decisions](docs/DECISIONS.md) | Product and technical decisions |
+| [Deployment Runbook](docs/DEPLOYMENT.md) | Step-by-step production deploy guide |
 | [Sprint Plans](plans/README.md) | Build roadmap (13 sprints) |
 | [Smoke Test Checklist](docs/SMOKE_TEST.md) | Pre-launch verification steps |
 

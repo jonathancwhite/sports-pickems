@@ -26,11 +26,15 @@ export default defineConfig({
           if (id.includes("@tanstack/react-query")) {
             return "query";
           }
-          if (id.includes("@clerk")) {
-            return "clerk";
-          }
-          if (id.includes("react-dom") || id.includes("/react/")) {
-            return "react";
+          // Clerk depends on the React runtime and loads on every page, so
+          // keep them in one vendor chunk to avoid a clerk <-> react cycle.
+          if (
+            id.includes("@clerk") ||
+            id.includes("react-dom") ||
+            id.includes("/react/") ||
+            id.includes("/scheduler/")
+          ) {
+            return "react-vendor";
           }
         },
       },

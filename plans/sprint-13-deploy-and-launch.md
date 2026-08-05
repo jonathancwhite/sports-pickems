@@ -86,7 +86,7 @@
 **So that** schema changes deploy without data loss
 
 **Acceptance criteria:**
-- [x] Migration script: `pnpm --filter db migrate` (Drizzle)
+- [x] Migration script: `pnpm --filter @callsheet/db db:migrate` (Prisma)
 - [x] Run migrations as part of API deploy (Fly release command) or manual step documented
 - [x] Seed script for production: sports + classifications only (no test data)
 - [x] Rollback strategy documented in README
@@ -178,7 +178,7 @@
 - [x] All API routes have appropriate auth (no unprotected mutations)
 - [x] `CRON_SECRET` is strong and not in code
 - [x] Clerk webhook signature verified
-- [x] SQL injection prevented (Drizzle parameterized queries)
+- [x] SQL injection prevented (Prisma parameterized queries)
 - [x] Rate limiting on auth-sensitive endpoints (Clerk handles sign-up; add on league create/join)
 - [x] CORS restricted to production domain
 - [x] No secrets in client bundle (only `VITE_*` public keys)

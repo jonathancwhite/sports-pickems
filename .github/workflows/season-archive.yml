@@ -1,7 +1,9 @@
 name: Season archive
 
-# Disabled until deployment — trigger manually via workflow_dispatch when ready
 on:
+  schedule:
+    # Daily at 7 AM UTC — archive seasons whose games are all final
+    - cron: "0 7 * * *"
   workflow_dispatch:
 
 jobs:
