@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@callsheet/shared": "workspace:*",
-    "@clerk/clerk-react": "^5.61.3",
+    "@clerk/clerk-react": "^5.61.6",
     "@hookform/resolvers": "^5.4.0",
     "@tanstack/react-query": "^5.64.2",
     "@tanstack/react-router": "^1.98.0",
