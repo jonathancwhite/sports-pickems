@@ -1,9 +1,10 @@
 name: Waitlist Expiry
 
 on:
-  schedule:
-    # Every hour — re-offer expired waitlist invites
-    - cron: "0 * * * *"
+  # schedule temporarily disabled — missing API_URL / CRON_SECRET secrets
+  # schedule:
+  #   # Every hour — re-offer expired waitlist invites
+  #   - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
