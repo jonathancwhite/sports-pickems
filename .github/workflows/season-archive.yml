@@ -1,9 +1,10 @@
 name: Season archive
 
 on:
-  schedule:
-    # Daily at 7 AM UTC — archive seasons whose games are all final
-    - cron: "0 7 * * *"
+  # schedule temporarily disabled — missing API_URL / CRON_SECRET secrets
+  # schedule:
+  #   # Daily at 7 AM UTC — archive seasons whose games are all final
+  #   - cron: "0 7 * * *"
   workflow_dispatch:
 
 jobs:
