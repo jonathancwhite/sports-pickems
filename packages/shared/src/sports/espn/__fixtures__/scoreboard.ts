@@ -105,6 +105,59 @@ export const mockEspnScoreboard: EspnScoreboard = {
   events: [scheduledGameEvent, finalGameEvent],
 };
 
+/**
+ * The same minimal scoreboard, stamped with an arbitrary season — used to
+ * exercise the requested-vs-returned season check without a live request.
+ * Pass `null` to drop `season` entirely, which is the "cannot check" case.
+ */
+export function scoreboardForSeason(
+  seasonYear: number | null,
+  week = 1,
+): EspnScoreboard {
+  const scoreboard: EspnScoreboard = {
+    ...mockEspnScoreboard,
+    week: { number: week },
+  };
+
+  if (seasonYear === null) {
+    delete scoreboard.season;
+    return scoreboard;
+  }
+
+  return { ...scoreboard, season: { year: seasonYear, type: 2 } };
+}
+
+/**
+ * A week-1 calendar response of the shape `fetchRegularSeasonWeeks` reads.
+ * ESPN's calendar is per-season, so the week count varies by year.
+ */
+export function calendarScoreboardForSeason(
+  seasonYear: number | null,
+  weekCount: number,
+): EspnScoreboard & {
+  leagues: Array<{
+    calendar: Array<{ value: string; entries?: Array<{ value: string }> }>;
+  }>;
+} {
+  return {
+    ...scoreboardForSeason(seasonYear),
+    events: [],
+    leagues: [
+      {
+        calendar: [
+          { value: "1", entries: [{ value: "1" }] },
+          {
+            value: "2",
+            entries: Array.from({ length: weekCount }, (_, i) => ({
+              value: String(i + 1),
+            })),
+          },
+        ],
+      },
+    ],
+  };
+}
+
 export const inProgressGameEvent: EspnEvent = {
   id: "401999002",
   date: "2025-09-07T19:30:00.000Z",

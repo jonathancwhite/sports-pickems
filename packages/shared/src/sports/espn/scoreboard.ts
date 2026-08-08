@@ -177,6 +177,64 @@ export function mapEspnScoreboardToGames(
   return { games, errors };
 }
 
+/**
+ * Thrown when ESPN returns a different season than the one requested.
+ *
+ * Silently accepting a mismatch is the dangerous case: the games would be
+ * upserted under the requested season's id, quietly mixing two seasons'
+ * schedules together. Failing here means the caller records an error for that
+ * week and writes nothing.
+ */
+export class EspnSeasonMismatchError extends Error {
+  constructor(
+    message: string,
+    public readonly requestedSeason: number,
+    public readonly returnedSeason: number,
+  ) {
+    super(message);
+    this.name = "EspnSeasonMismatchError";
+  }
+}
+
+/**
+ * Returns a description of a requested/returned season mismatch, or null when
+ * the seasons agree *or* when the response carries no usable `season.year`.
+ *
+ * The "no usable year" case deliberately passes: ESPN omitting the field is a
+ * payload shape we cannot check, not evidence of a wrong season, and treating
+ * it as a failure would take down the normal current-season sync the first time
+ * ESPN trimmed its response.
+ */
+export function getScoreboardSeasonMismatch(
+  scoreboard: Pick<EspnScoreboard, "season">,
+  requestedSeason: number,
+): string | null {
+  const returned = scoreboard.season?.year;
+  if (typeof returned !== "number" || !Number.isFinite(returned)) {
+    return null;
+  }
+
+  if (returned === requestedSeason) {
+    return null;
+  }
+
+  return `ESPN returned season ${returned} for a request for season ${requestedSeason}`;
+}
+
+function assertScoreboardSeason(
+  scoreboard: Pick<EspnScoreboard, "season">,
+  requestedSeason: number,
+): void {
+  const mismatch = getScoreboardSeasonMismatch(scoreboard, requestedSeason);
+  if (mismatch) {
+    throw new EspnSeasonMismatchError(
+      mismatch,
+      requestedSeason,
+      scoreboard.season!.year,
+    );
+  }
+}
+
 export interface FetchScoreboardParams {
   season: number;
   week: number;
@@ -194,13 +252,18 @@ export async function fetchScoreboard(
     config.path,
     {
       ...config.extraParams,
-      year: params.season,
+      // `dates` selects the season, not `year` — ESPN accepts `year` but
+      // ignores it and serves the current season regardless, for every league
+      // on the site API. See issue 10.
+      dates: params.season,
       week: params.week,
       seasontype: params.seasonType ?? ESPN_REGULAR_SEASON_TYPE,
       limit: 500,
     },
     options,
   );
+
+  assertScoreboardSeason(scoreboard, params.season);
 
   return mapEspnScoreboardToGames(scoreboard, params.week, config);
 }
@@ -226,13 +289,18 @@ export async function fetchRegularSeasonWeeks(
     config.path,
     {
       ...config.extraParams,
-      year: season,
+      // See `fetchScoreboard` — `dates`, not `year`, selects the season. The
+      // calendar is per-season (FBS ran 16 regular-season weeks in 2024 and
+      // 2025, 15 in 2026), so getting this wrong returns the wrong week list.
+      dates: season,
       week: 1,
       seasontype: ESPN_REGULAR_SEASON_TYPE,
       limit: 1,
     },
     options,
   );
+
+  assertScoreboardSeason(scoreboard, season);
 
   const calendar = scoreboard.leagues?.[0]?.calendar;
   const regularSeason = calendar?.find((entry) => entry.value === "2");

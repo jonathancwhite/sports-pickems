@@ -47,9 +47,11 @@ export {
 export {
   computeWinner,
   ESPN_REGULAR_SEASON_TYPE,
+  EspnSeasonMismatchError,
   fetchRegularSeasonWeeks,
   fetchScoreboard,
   getEspnEventMappingError,
+  getScoreboardSeasonMismatch,
   mapEspnEventToGame,
   mapEspnScoreboardToGames,
   mapEspnStatus,
