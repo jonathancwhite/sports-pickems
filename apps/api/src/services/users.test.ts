@@ -6,33 +6,21 @@ const base = {
   email_addresses: [],
   primary_email_address_id: null,
   username: null,
-  first_name: null,
-  last_name: null,
   image_url: null,
 };
 
 describe("resolveUsername", () => {
   it("prefers the Clerk username when set", () => {
-    const data = { ...base, username: "jcw", first_name: "Jonathan" };
+    const data = { ...base, username: "jcw" };
     expect(resolveUsername(data, "jonathan@example.com")).toBe("jcw");
   });
 
-  it("falls back to the full name for OAuth sign-ups with no username", () => {
-    const data = { ...base, first_name: "Jonathan", last_name: "White" };
-    expect(resolveUsername(data, "jonathan@example.com")).toBe("Jonathan White");
-  });
-
-  it("uses the first name alone when there is no last name", () => {
-    const data = { ...base, first_name: "Jonathan" };
-    expect(resolveUsername(data, "jonathan@example.com")).toBe("Jonathan");
-  });
-
-  it("falls back to the email local part when no name is present", () => {
+  it("falls back to the email local part when Clerk sends no username", () => {
     expect(resolveUsername(base, "jonathan.white@example.com")).toBe("jonathan.white");
   });
 
-  it("treats whitespace-only Clerk fields as absent", () => {
-    const data = { ...base, username: "  ", first_name: " ", last_name: "  " };
+  it("treats a whitespace-only Clerk username as absent", () => {
+    const data = { ...base, username: "  " };
     expect(resolveUsername(data, "jonathan@example.com")).toBe("jonathan");
   });
 
@@ -47,5 +35,20 @@ describe("resolveUsername", () => {
 
   it("never returns an empty string", () => {
     expect(resolveUsername(base, "@example.com")).toBe("user_2abcDEF123");
+  });
+
+  // The handle renders as `@username`, so a value with spaces would read wrong.
+  // Clerk's own usernames are space-free and the email local part cannot contain
+  // an unquoted space, so the resolved handle is safe behind an `@`.
+  it("never resolves to a value containing a space", () => {
+    const cases = [
+      { data: { ...base, username: "jcw" }, email: "jonathan@example.com" },
+      { data: base, email: "jonathan.white@example.com" },
+      { data: base, email: "" },
+    ];
+
+    for (const { data, email } of cases) {
+      expect(resolveUsername(data, email)).not.toMatch(/\s/);
+    }
   });
 });

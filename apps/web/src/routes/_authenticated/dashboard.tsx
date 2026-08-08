@@ -40,7 +40,7 @@ function DashboardPage() {
 
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              Welcome, {user.username}
+              Welcome, @{user.username}
             </h1>
             <p className="mt-1 text-muted-foreground">
               Your pick&apos;em command center
