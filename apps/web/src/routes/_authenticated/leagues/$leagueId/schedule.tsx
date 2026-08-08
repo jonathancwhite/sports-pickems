@@ -208,6 +208,7 @@ function CommissionerSchedulePage() {
 
       <div id="week-panel" role="tabpanel" aria-labelledby={`week-tab-${selectedWeek}`}>
         <ConferenceFilter
+          className="mt-6"
           selected={conference}
           onChange={setConference}
           counts={conferenceCounts}

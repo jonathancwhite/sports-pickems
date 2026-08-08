@@ -66,7 +66,7 @@ function Chip({ label, title, count, isSelected, onClick }: ChipProps) {
         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         isSelected
-          ? "border-primary bg-primary text-primary-foreground"
+          ? "border-primary bg-accent text-accent-foreground"
           : "border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
       )}
     >
@@ -75,7 +75,7 @@ function Chip({ label, title, count, isSelected, onClick }: ChipProps) {
         <span
           className={cn(
             "tabular-nums",
-            isSelected ? "text-primary-foreground/70" : "text-muted-foreground/70",
+            isSelected ? "text-muted-foreground" : "text-muted-foreground/70",
           )}
         >
           {count}

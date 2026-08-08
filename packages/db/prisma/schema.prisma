@@ -178,6 +178,10 @@ model Game {
   awayTeam     String      @map("away_team")
   homeTeamAbbr String?     @map("home_team_abbr")
   awayTeamAbbr String?     @map("away_team_abbr")
+  // ESPN CDN logo URLs. Null for teams ESPN has no logo for and for rows
+  // synced before logo tracking existed — re-sync backfills those.
+  homeTeamLogo String?     @map("home_team_logo")
+  awayTeamLogo String?     @map("away_team_logo")
   // Conference slugs from @callsheet/shared FBS_CONFERENCES. Null for teams
   // outside FBS (e.g. an FCS non-conference opponent) and for rows synced
   // before conference tracking existed — re-sync backfills those.

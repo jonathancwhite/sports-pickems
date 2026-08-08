@@ -17,6 +17,8 @@ type SlateWithGames = {
       awayTeam: string;
       homeTeamAbbr: string | null;
       awayTeamAbbr: string | null;
+      homeTeamLogo: string | null;
+      awayTeamLogo: string | null;
       homeConference: string | null;
       awayConference: string | null;
       startTime: Date;
@@ -118,6 +120,8 @@ function toSlateGame(
     awayTeam: game.awayTeam,
     homeTeamAbbr: game.homeTeamAbbr,
     awayTeamAbbr: game.awayTeamAbbr,
+    homeTeamLogo: game.homeTeamLogo,
+    awayTeamLogo: game.awayTeamLogo,
     homeConference: game.homeConference,
     awayConference: game.awayConference,
     startTime: game.startTime.toISOString(),
@@ -392,11 +396,6 @@ export async function setSlate(
     }
   }
 
-  const isFirstSlate =
-    (await prisma.leagueWeekSlate.count({
-      where: { leagueId, seasonId: season.id },
-    })) === 0;
-
   const slate = await prisma.$transaction(async (tx) => {
     const upserted = await tx.leagueWeekSlate.upsert({
       where: {
@@ -437,20 +436,10 @@ export async function setSlate(
       });
     }
 
-    if (isFirstSlate) {
-      if (league.status === "setup") {
-        await tx.league.update({
-          where: { id: leagueId },
-          data: { status: "active" },
-        });
-      }
-      if (season.status === "upcoming") {
-        await tx.season.update({
-          where: { id: season.id },
-          data: { status: "active" },
-        });
-      }
-    }
+    // Building a slate deliberately does NOT start the season — a commissioner
+    // can set weeks up well before kickoff. Activation happens either when the
+    // commissioner starts the season explicitly or when the season's first game
+    // kicks off (see startSeason / activateStartedSeasons).
 
     return tx.leagueWeekSlate.findUniqueOrThrow({
       where: { id: upserted.id },

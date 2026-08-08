@@ -2,6 +2,22 @@ import { useMemo, useRef } from "react";
 import type { SlateSummary } from "@callsheet/shared";
 import { cn } from "@/lib/utils";
 
+/**
+ * Sub-line under the week number. The design reference shows a calendar range
+ * here, which the API doesn't carry — slate state is the useful stand-in.
+ */
+function weekSubLabel(slate: SlateSummary | undefined): string {
+  if (!slate) {
+    return "No slate";
+  }
+
+  if (slate.locked) {
+    return "Locked";
+  }
+
+  return `${slate.gameCount} ${slate.gameCount === 1 ? "game" : "games"}`;
+}
+
 interface WeekTabsProps {
   weeks: number[];
   selectedWeek: number;
@@ -36,6 +52,10 @@ export function WeekTabs({
     return null;
   }
 
+  // Pages that don't load slates (e.g. the leaderboard) get plain week cards
+  // rather than a row of "No slate" placeholders.
+  const showSubLabel = slates !== undefined;
+
   function focusWeek(week: number) {
     onWeekChange(week);
     tabRefs.current.get(week)?.focus();
@@ -69,7 +89,7 @@ export function WeekTabs({
       role="tablist"
       aria-label="Week"
       className={cn(
-        "flex gap-0.5 overflow-x-auto border-b -mb-px [scrollbar-width:thin]",
+        "flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]",
         className,
       )}
     >
@@ -96,20 +116,23 @@ export function WeekTabs({
             onClick={() => onWeekChange(week)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
-              "inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              "flex w-[7.5rem] shrink-0 flex-col items-start rounded-lg border px-3 py-2.5 text-left transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
               isSelected
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground",
+                ? "border-primary bg-accent text-accent-foreground"
+                : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
             )}
           >
-            Week {week}
-            {slate?.locked && (
+            <span className="text-[13px] font-semibold">Week {week}</span>
+            {showSubLabel && (
               <span
-                className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
-                title="Locked — first game has kicked off"
+                className={cn(
+                  "mt-0.5 text-[10px] uppercase tracking-wide",
+                  isSelected ? "text-muted-foreground" : "text-muted-foreground/75",
+                )}
+                title={slate?.locked ? "Locked — first game has kicked off" : undefined}
               >
-                Locked
+                {weekSubLabel(slate)}
               </span>
             )}
           </button>

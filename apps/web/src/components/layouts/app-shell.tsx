@@ -53,7 +53,7 @@ export function AppShell() {
         </header>
 
         <main className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-5xl p-4 sm:p-6">
+          <div className="mx-auto max-w-[95rem] p-4 sm:p-6">
             <Outlet />
           </div>
         </main>

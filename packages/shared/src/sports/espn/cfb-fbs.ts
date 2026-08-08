@@ -19,6 +19,8 @@ export interface MappedGame {
   awayTeam: string;
   homeTeamAbbr: string | null;
   awayTeamAbbr: string | null;
+  homeTeamLogo: string | null;
+  awayTeamLogo: string | null;
   /** Conference slug, or null when the team is outside FBS (e.g. an FCS opponent). */
   homeConference: string | null;
   awayConference: string | null;
@@ -109,6 +111,8 @@ export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame |
     awayTeam: away.team.displayName,
     homeTeamAbbr: home.team.abbreviation ?? null,
     awayTeamAbbr: away.team.abbreviation ?? null,
+    homeTeamLogo: home.team.logo ?? null,
+    awayTeamLogo: away.team.logo ?? null,
     homeConference: conferenceSlugFromEspnId(home.team.conferenceId),
     awayConference: conferenceSlugFromEspnId(away.team.conferenceId),
     startTime: new Date(competition.date ?? event.date),

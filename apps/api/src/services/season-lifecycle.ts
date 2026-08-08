@@ -146,7 +146,9 @@ export async function checkSeasonCompletion(seasonId: string): Promise<boolean> 
     return false;
   }
 
-  const allTerminal = games.every((game) => isSeasonCompletionTerminalStatus(game.status));
+  const allTerminal = games.every((game) =>
+    isSeasonCompletionTerminalStatus(game.status),
+  );
   if (!allTerminal) {
     return false;
   }
@@ -160,6 +162,147 @@ export async function checkSeasonCompletion(seasonId: string): Promise<boolean> 
   });
 
   return true;
+}
+
+/**
+ * Move a league and its season into the active state. Callers are responsible
+ * for authorization — this is shared by the commissioner's explicit start and
+ * the kickoff-day cron.
+ */
+async function activateLeagueSeason(
+  leagueId: string,
+  seasonId: string,
+): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const locked = await lockLeagueForUpdate(tx, leagueId);
+    if (!locked || locked.status !== "setup") {
+      return false;
+    }
+
+    await tx.league.update({
+      where: { id: leagueId },
+      data: { status: "active" },
+    });
+
+    // Seasons are shared across leagues in a classification, so only promote
+    // one that is still upcoming — never walk a completed season backwards.
+    await tx.season.updateMany({
+      where: { id: seasonId, status: "upcoming" },
+      data: { status: "active" },
+    });
+
+    return true;
+  });
+}
+
+/**
+ * Commissioner-triggered season start. The counterpart to the automatic
+ * kickoff-day activation in `activateStartedSeasons`.
+ */
+export async function startSeason(clerkId: string, leagueId: string): Promise<League> {
+  const { league } = await requireCommissioner(clerkId, leagueId);
+
+  if (league.status === "archived") {
+    throw new LeagueServiceError(
+      "This league is archived and read-only",
+      403,
+      "league_archived",
+    );
+  }
+
+  if (league.status === "active" || league.currentSeason?.status === "active") {
+    throw new LeagueServiceError(
+      "This season has already started",
+      400,
+      "season_already_active",
+    );
+  }
+
+  if (league.currentSeason?.status === "completed") {
+    throw new LeagueServiceError(
+      "This season is already complete — start a new season instead",
+      400,
+      "season_completed",
+    );
+  }
+
+  const slateCount = await prisma.leagueWeekSlate.count({
+    where: { leagueId, seasonId: league.currentSeasonId! },
+  });
+
+  if (slateCount === 0) {
+    throw new LeagueServiceError(
+      "Set at least one week's slate before starting the season",
+      400,
+      "no_slates",
+    );
+  }
+
+  const activated = await activateLeagueSeason(leagueId, league.currentSeasonId!);
+  if (!activated) {
+    throw new LeagueServiceError(
+      "This season has already started",
+      400,
+      "season_already_active",
+    );
+  }
+
+  const updated = await prisma.league.findUniqueOrThrow({
+    where: { id: leagueId },
+    include: leagueInclude,
+  });
+
+  return mapLeague(updated, { role: "commissioner", isCommissioner: true });
+}
+
+/**
+ * Starts any league still in setup whose season has reached its first kickoff,
+ * so a commissioner who never presses "Start season" doesn't leave membership
+ * unlocked while picks are already being made.
+ */
+export async function activateStartedSeasons(): Promise<{ leaguesStarted: number }> {
+  const pending = await prisma.league.findMany({
+    where: {
+      deletedAt: null,
+      status: "setup",
+      currentSeasonId: { not: null },
+      currentSeason: { status: "upcoming" },
+    },
+    select: { id: true, currentSeasonId: true },
+  });
+
+  if (pending.length === 0) {
+    return { leaguesStarted: 0 };
+  }
+
+  const now = new Date();
+  let leaguesStarted = 0;
+
+  // Cache per season — many leagues share one season, and the earliest kickoff
+  // is a property of the season, not the league.
+  const seasonStarted = new Map<string, boolean>();
+
+  for (const league of pending) {
+    const seasonId = league.currentSeasonId!;
+
+    if (!seasonStarted.has(seasonId)) {
+      const firstGame = await prisma.game.findFirst({
+        where: { seasonId, startTime: { lte: now } },
+        select: { id: true },
+      });
+      seasonStarted.set(seasonId, Boolean(firstGame));
+    }
+
+    if (!seasonStarted.get(seasonId)) {
+      continue;
+    }
+
+    if (await activateLeagueSeason(league.id, seasonId)) {
+      leaguesStarted++;
+    }
+  }
+
+  return { leaguesStarted };
 }
 
 export async function processSeasonArchiving(): Promise<{
@@ -511,19 +654,17 @@ export async function deleteLeague(clerkId: string, leagueId: string): Promise<v
   });
 }
 
-function mapTransfer(
-  transfer: {
-    id: string;
-    leagueId: string;
-    fromUserId: string;
-    toUserId: string;
-    status: CommissionerTransfer["status"];
-    expiresAt: Date;
-    createdAt: Date;
-    fromUser: { username: string };
-    toUser: { username: string };
-  },
-): CommissionerTransfer {
+function mapTransfer(transfer: {
+  id: string;
+  leagueId: string;
+  fromUserId: string;
+  toUserId: string;
+  status: CommissionerTransfer["status"];
+  expiresAt: Date;
+  createdAt: Date;
+  fromUser: { username: string };
+  toUser: { username: string };
+}): CommissionerTransfer {
   return {
     id: transfer.id,
     leagueId: transfer.leagueId,
@@ -578,7 +719,11 @@ export async function initiateCommissionerTransfer(
   });
 
   if (!targetMembership) {
-    throw new LeagueServiceError("Target user is not a current member", 400, "invalid_target");
+    throw new LeagueServiceError(
+      "Target user is not a current member",
+      400,
+      "invalid_target",
+    );
   }
 
   const existingPending = await prisma.commissionerTransfer.findFirst({
@@ -639,7 +784,11 @@ export async function acceptCommissionerTransfer(
   });
 
   if (!transfer) {
-    throw new LeagueServiceError("No pending transfer found", 404, "transfer_not_found");
+    throw new LeagueServiceError(
+      "No pending transfer found",
+      404,
+      "transfer_not_found",
+    );
   }
 
   if (new Date() > transfer.expiresAt) {
@@ -647,7 +796,11 @@ export async function acceptCommissionerTransfer(
       where: { id: transfer.id },
       data: { status: "expired", respondedAt: new Date() },
     });
-    throw new LeagueServiceError("Transfer request has expired", 410, "transfer_expired");
+    throw new LeagueServiceError(
+      "Transfer request has expired",
+      410,
+      "transfer_expired",
+    );
   }
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -711,7 +864,11 @@ export async function declineCommissionerTransfer(
   });
 
   if (!transfer) {
-    throw new LeagueServiceError("No pending transfer found", 404, "transfer_not_found");
+    throw new LeagueServiceError(
+      "No pending transfer found",
+      404,
+      "transfer_not_found",
+    );
   }
 
   await prisma.commissionerTransfer.update({

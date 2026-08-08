@@ -40,7 +40,9 @@ export class ApiError extends Error {
   }
 }
 
-async function getAuthToken(getToken: () => Promise<string | null>): Promise<string | null> {
+async function getAuthToken(
+  getToken: () => Promise<string | null>,
+): Promise<string | null> {
   return getToken();
 }
 
@@ -140,7 +142,8 @@ export function useApiClient() {
     getPublicLeagues: (query: PublicLeaguesQuery) => {
       const params = new URLSearchParams();
       if (query.sportId) params.set("sportId", query.sportId);
-      if (query.classificationId) params.set("classificationId", query.classificationId);
+      if (query.classificationId)
+        params.set("classificationId", query.classificationId);
       if (query.sort) params.set("sort", query.sort);
       if (query.page) params.set("page", String(query.page));
       if (query.limit) params.set("limit", String(query.limit));
@@ -197,7 +200,11 @@ export function useApiClient() {
         method: "PUT",
         body: JSON.stringify({ gameIds }),
       }),
-    getPicks: (leagueId: string, week: number, options?: { userId?: string; all?: boolean }) => {
+    getPicks: (
+      leagueId: string,
+      week: number,
+      options?: { userId?: string; all?: boolean },
+    ) => {
       const params = new URLSearchParams();
       if (options?.userId) params.set("userId", options.userId);
       if (options?.all) params.set("all", "true");
@@ -240,6 +247,10 @@ export function useApiClient() {
       }),
     joinSeason: (leagueId: string) =>
       apiFetch<League>(`/api/leagues/${leagueId}/seasons/join`, getToken, {
+        method: "POST",
+      }),
+    startSeason: (leagueId: string) =>
+      apiFetch<League>(`/api/leagues/${leagueId}/season/start`, getToken, {
         method: "POST",
       }),
     getLeagueSettings: (leagueId: string) =>

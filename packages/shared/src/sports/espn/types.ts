@@ -21,6 +21,8 @@ export interface EspnTeam {
   abbreviation: string;
   /** ESPN group id for the team's conference. Absent on some non-FBS teams. */
   conferenceId?: string;
+  /** CDN URL for the team logo. Absent for some lower-division teams. */
+  logo?: string;
 }
 
 export interface EspnCompetitor {

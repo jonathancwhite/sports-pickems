@@ -3,6 +3,7 @@ import { Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { GameCard } from "@/components/game-card";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { PickProgress } from "@/components/pick-progress";
 import { WeekTabs } from "@/components/week-tabs";
 import {
   usePicks,
@@ -43,15 +44,20 @@ function PicksPage() {
 
   useEffect(() => {
     if (myPicks?.picks) {
-      setLocalPicks(new Map(myPicks.picks.map((pick) => [pick.gameId, pick.pickedTeam])));
+      setLocalPicks(
+        new Map(myPicks.picks.map((pick) => [pick.gameId, pick.pickedTeam])),
+      );
     } else {
       setLocalPicks(new Map());
     }
   }, [myPicks, selectedWeek]);
 
   const picksByGame = useMemo(() => {
-    const map = new Map<string, Array<{ username: string; pickedTeam: "home" | "away" }>>();
-    const source = locked && showAllPicks ? allPicks?.picks ?? [] : [];
+    const map = new Map<
+      string,
+      Array<{ username: string; pickedTeam: "home" | "away" }>
+    >();
+    const source = locked && showAllPicks ? (allPicks?.picks ?? []) : [];
 
     for (const pick of source) {
       const existing = map.get(pick.gameId) ?? [];
@@ -68,7 +74,9 @@ function PicksPage() {
   const totalGames = slate?.games.length ?? 0;
 
   const hasChanges = useMemo(() => {
-    const saved = new Map(myPicks?.picks.map((pick) => [pick.gameId, pick.pickedTeam]) ?? []);
+    const saved = new Map(
+      myPicks?.picks.map((pick) => [pick.gameId, pick.pickedTeam]) ?? [],
+    );
     if (saved.size !== localPicks.size) {
       return true;
     }
@@ -86,7 +94,9 @@ function PicksPage() {
 
   if (!league) {
     return (
-      <p className="text-sm text-destructive">League not found or you don&apos;t have access.</p>
+      <p className="text-sm text-destructive">
+        League not found or you don&apos;t have access.
+      </p>
     );
   }
 
@@ -126,22 +136,29 @@ function PicksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Make picks</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {totalGames > 0
-              ? `${pickedCount} of ${totalGames} games picked`
-              : "Select winners for this week's slate"}
+            Select winners for this week&apos;s slate.
           </p>
         </div>
-        <Link
-          to="/leagues/$leagueId"
-          params={{ leagueId }}
-          className="text-sm text-primary hover:underline"
-        >
-          Back to league
-        </Link>
+        <div className="flex flex-col gap-3 sm:items-end">
+          <Link
+            to="/leagues/$leagueId"
+            params={{ leagueId }}
+            className="text-sm text-primary hover:underline"
+          >
+            Back to league
+          </Link>
+          {totalGames > 0 && (
+            <PickProgress
+              label={`Week ${selectedWeek} progress`}
+              current={pickedCount}
+              total={totalGames}
+            />
+          )}
+        </div>
       </div>
 
       <WeekTabs
@@ -157,69 +174,71 @@ function PicksPage() {
         aria-labelledby={`week-tab-${selectedWeek}`}
         className="space-y-6 pt-4"
       >
-      {locked && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
-          <span>Slate locked — all members&apos; picks are visible.</span>
-          <button
-            type="button"
-            onClick={() => setShowAllPicks((value) => !value)}
-            className="rounded-md border px-3 py-1 text-xs font-medium hover:bg-muted"
-          >
-            {showAllPicks ? "Hide others" : "Show all picks"}
-          </button>
-        </div>
-      )}
+        {locked && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
+            <span>Slate locked — all members&apos; picks are visible.</span>
+            <button
+              type="button"
+              onClick={() => setShowAllPicks((value) => !value)}
+              className="rounded-md border px-3 py-1 text-xs font-medium hover:bg-muted"
+            >
+              {showAllPicks ? "Hide others" : "Show all picks"}
+            </button>
+          </div>
+        )}
 
-      {!locked && (
-        <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Other members&apos; picks stay hidden until the slate locks.
-          </p>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={locked || !hasChanges || submitPicks.isPending}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            <Save className="size-4" aria-hidden />
-            {submitPicks.isPending ? "Saving…" : "Save picks"}
-          </button>
-        </div>
-      )}
+        {!locked && (
+          <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Other members&apos; picks stay hidden until the slate locks.
+            </p>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={locked || !hasChanges || submitPicks.isPending}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Save className="size-4" aria-hidden />
+              {submitPicks.isPending ? "Saving…" : "Save picks"}
+            </button>
+          </div>
+        )}
 
-      {slatePending ? (
-        <LoadingSpinner label="Loading slate…" />
-      ) : slateError || !slate ? (
-        <div className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-          Commissioner hasn&apos;t set this week&apos;s games yet.
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {slate.games.map((game) => {
-            const gameLocked =
-              locked ||
-              game.status === "in_progress" ||
-              game.status === "final" ||
-              new Date(game.startTime) <= new Date();
+        {slatePending ? (
+          <LoadingSpinner label="Loading slate…" />
+        ) : slateError || !slate ? (
+          <div className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            Commissioner hasn&apos;t set this week&apos;s games yet.
+          </div>
+        ) : (
+          <ul className="grid gap-3 lg:grid-cols-2">
+            {slate.games.map((game) => {
+              const gameLocked =
+                locked ||
+                game.status === "in_progress" ||
+                game.status === "final" ||
+                new Date(game.startTime) <= new Date();
 
-            return (
-              <li
-                key={game.id}
-                className={cn(!localPicks.has(game.id) && !gameLocked && "opacity-90")}
-              >
-                <GameCard
-                  game={game}
-                  selectedTeam={localPicks.get(game.id) ?? null}
-                  onSelectTeam={(team) => selectTeam(game.id, team)}
-                  disabled={gameLocked}
-                  showResultIcons
-                  otherPicks={showAllPicks ? picksByGame.get(game.id) ?? [] : []}
-                />
-              </li>
-            );
-          })}
-        </ul>
-      )}
+              return (
+                <li
+                  key={game.id}
+                  className={cn(
+                    !localPicks.has(game.id) && !gameLocked && "opacity-90",
+                  )}
+                >
+                  <GameCard
+                    game={game}
+                    selectedTeam={localPicks.get(game.id) ?? null}
+                    onSelectTeam={(team) => selectTeam(game.id, team)}
+                    disabled={gameLocked}
+                    showResultIcons
+                    otherPicks={showAllPicks ? (picksByGame.get(game.id) ?? []) : []}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );

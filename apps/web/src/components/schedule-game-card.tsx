@@ -1,7 +1,8 @@
 import { Check, Lock } from "lucide-react";
-import { conferenceShortName, type Game } from "@callsheet/shared";
+import type { Game } from "@callsheet/shared";
 import { formatKickoff } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { MATCHUP_GRID, MatchupSeparator, TeamTile } from "@/components/team-tile";
 
 interface ScheduleGameCardProps {
   game: Game;
@@ -11,9 +12,9 @@ interface ScheduleGameCardProps {
 }
 
 /**
- * Commissioner-facing game card used to build a week's slate. Distinct from
- * `GameCard`, which is the player-facing pick surface — here the whole card is
- * one checkbox, and the two teams are informational rather than selectable.
+ * Commissioner-facing game card used to build a week's slate. Shares the
+ * matchup layout with `GameCard`, but the whole card is one checkbox — the two
+ * teams are informational rather than individually selectable.
  */
 export function ScheduleGameCard({
   game,
@@ -24,7 +25,7 @@ export function ScheduleGameCard({
   return (
     <label
       className={cn(
-        "group relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-card p-4 transition-colors",
+        "group relative flex cursor-pointer flex-col rounded-xl border bg-card p-4 transition-colors",
         "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1",
         selected ? "border-primary bg-primary/5" : "hover:border-muted-foreground/40",
         disabled && "cursor-not-allowed opacity-60 hover:border-border",
@@ -38,9 +39,10 @@ export function ScheduleGameCard({
         className="sr-only"
       />
 
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-xs text-muted-foreground">
-          {formatKickoff(game.startTime)}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
+          <span className="truncate">{formatKickoff(game.startTime)}</span>
         </span>
         <span
           aria-hidden
@@ -55,40 +57,30 @@ export function ScheduleGameCard({
         </span>
       </div>
 
-      <div className="space-y-1.5">
-        <TeamRow name={game.awayTeam} conference={game.awayConference} />
-        <TeamRow name={game.homeTeam} conference={game.homeConference} isHome />
+      <div className={MATCHUP_GRID}>
+        <TeamTile
+          name={game.awayTeam}
+          abbr={game.awayTeamAbbr}
+          logo={game.awayTeamLogo}
+          conference={game.awayConference}
+          isHome={false}
+        />
+        <MatchupSeparator />
+        <TeamTile
+          name={game.homeTeam}
+          abbr={game.homeTeamAbbr}
+          logo={game.homeTeamLogo}
+          conference={game.homeConference}
+          isHome
+        />
       </div>
 
       {disabled && (
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="mt-3 inline-flex items-center gap-1 border-t pt-3 text-[11px] text-muted-foreground">
           <Lock className="size-3" aria-hidden />
           Locked
         </span>
       )}
     </label>
-  );
-}
-
-function TeamRow({
-  name,
-  conference,
-  isHome = false,
-}: {
-  name: string;
-  conference: string | null;
-  isHome?: boolean;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-2">
-      <span className="min-w-0 truncate text-sm font-medium">
-        {isHome && <span className="text-muted-foreground">vs </span>}
-        {!isHome && <span className="text-muted-foreground">@ </span>}
-        {name}
-      </span>
-      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {conferenceShortName(conference)}
-      </span>
-    </div>
   );
 }

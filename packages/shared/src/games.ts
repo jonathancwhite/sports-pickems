@@ -30,6 +30,8 @@ export const gameSchema = z.object({
   awayTeam: z.string(),
   homeTeamAbbr: z.string().nullable(),
   awayTeamAbbr: z.string().nullable(),
+  homeTeamLogo: z.string().nullable(),
+  awayTeamLogo: z.string().nullable(),
   homeConference: z.string().nullable(),
   awayConference: z.string().nullable(),
   startTime: z.string().datetime(),

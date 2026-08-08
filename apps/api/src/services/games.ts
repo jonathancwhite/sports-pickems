@@ -121,6 +121,8 @@ function toApiGame(game: {
   awayTeam: string;
   homeTeamAbbr: string | null;
   awayTeamAbbr: string | null;
+  homeTeamLogo: string | null;
+  awayTeamLogo: string | null;
   homeConference: string | null;
   awayConference: string | null;
   startTime: Date;
@@ -136,6 +138,8 @@ function toApiGame(game: {
     awayTeam: game.awayTeam,
     homeTeamAbbr: game.homeTeamAbbr,
     awayTeamAbbr: game.awayTeamAbbr,
+    homeTeamLogo: game.homeTeamLogo,
+    awayTeamLogo: game.awayTeamLogo,
     homeConference: game.homeConference,
     awayConference: game.awayConference,
     startTime: game.startTime.toISOString(),
@@ -176,6 +180,8 @@ async function upsertMappedGame(
       awayTeam: mapped.awayTeam,
       homeTeamAbbr: mapped.homeTeamAbbr,
       awayTeamAbbr: mapped.awayTeamAbbr,
+      homeTeamLogo: mapped.homeTeamLogo,
+      awayTeamLogo: mapped.awayTeamLogo,
       homeConference: mapped.homeConference,
       awayConference: mapped.awayConference,
       startTime: mapped.startTime,
@@ -190,6 +196,8 @@ async function upsertMappedGame(
       awayTeam: mapped.awayTeam,
       homeTeamAbbr: mapped.homeTeamAbbr,
       awayTeamAbbr: mapped.awayTeamAbbr,
+      homeTeamLogo: mapped.homeTeamLogo,
+      awayTeamLogo: mapped.awayTeamLogo,
       homeConference: mapped.homeConference,
       awayConference: mapped.awayConference,
       startTime: mapped.startTime,
