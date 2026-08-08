@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONFERENCE_SLUGS } from "./sports/espn/conferences.js";
 
 export const gameStatusSchema = z.enum([
   "scheduled",
@@ -29,6 +30,8 @@ export const gameSchema = z.object({
   awayTeam: z.string(),
   homeTeamAbbr: z.string().nullable(),
   awayTeamAbbr: z.string().nullable(),
+  homeConference: z.string().nullable(),
+  awayConference: z.string().nullable(),
   startTime: z.string().datetime(),
   week: z.number().int(),
   status: gameStatusSchema,
@@ -43,6 +46,11 @@ export const gamesQuerySchema = z.object({
   seasonId: z.string().uuid(),
   week: z.coerce.number().int().min(1).max(20),
   classificationId: z.string().uuid().optional(),
+  /**
+   * Conference slug. Matches games where EITHER team is in the conference, so
+   * a cross-conference matchup appears under both sides.
+   */
+  conference: z.enum(CONFERENCE_SLUGS).optional(),
 });
 
 export type GamesQuery = z.infer<typeof gamesQuerySchema>;

@@ -165,13 +165,21 @@ export function useApiClient() {
       apiFetch<LeagueDetail>(`/api/leagues/${leagueId}/members/${userId}`, getToken, {
         method: "DELETE",
       }),
-    getGames: (seasonId: string, week: number, classificationId?: string) => {
+    getGames: (
+      seasonId: string,
+      week: number,
+      classificationId?: string,
+      conference?: string,
+    ) => {
       const params = new URLSearchParams({
         seasonId,
         week: String(week),
       });
       if (classificationId) {
         params.set("classificationId", classificationId);
+      }
+      if (conference) {
+        params.set("conference", conference);
       }
       return apiFetch<GamesResponse>(`/api/games?${params.toString()}`, getToken);
     },

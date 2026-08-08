@@ -121,6 +121,8 @@ function toApiGame(game: {
   awayTeam: string;
   homeTeamAbbr: string | null;
   awayTeamAbbr: string | null;
+  homeConference: string | null;
+  awayConference: string | null;
   startTime: Date;
   week: number;
   status: string;
@@ -134,6 +136,8 @@ function toApiGame(game: {
     awayTeam: game.awayTeam,
     homeTeamAbbr: game.homeTeamAbbr,
     awayTeamAbbr: game.awayTeamAbbr,
+    homeConference: game.homeConference,
+    awayConference: game.awayConference,
     startTime: game.startTime.toISOString(),
     week: game.week,
     status: game.status as Game["status"],
@@ -172,6 +176,8 @@ async function upsertMappedGame(
       awayTeam: mapped.awayTeam,
       homeTeamAbbr: mapped.homeTeamAbbr,
       awayTeamAbbr: mapped.awayTeamAbbr,
+      homeConference: mapped.homeConference,
+      awayConference: mapped.awayConference,
       startTime: mapped.startTime,
       status: mapped.status,
       homeScore: mapped.homeScore,
@@ -184,6 +190,8 @@ async function upsertMappedGame(
       awayTeam: mapped.awayTeam,
       homeTeamAbbr: mapped.homeTeamAbbr,
       awayTeamAbbr: mapped.awayTeamAbbr,
+      homeConference: mapped.homeConference,
+      awayConference: mapped.awayConference,
       startTime: mapped.startTime,
       status: mapped.status,
       homeScore: mapped.homeScore,
@@ -311,7 +319,21 @@ export async function listGames(query: GamesQuery): Promise<{ games: Game[] }> {
     where: {
       seasonId: query.seasonId,
       week: query.week,
-      OR: [{ status: { not: "final" } }, { startTime: { gte: cutoff } }],
+      // Both clauses are OR groups, so they have to be combined under AND —
+      // a second top-level `OR` key would replace the retention filter.
+      AND: [
+        { OR: [{ status: { not: "final" } }, { startTime: { gte: cutoff } }] },
+        ...(query.conference
+          ? [
+              {
+                OR: [
+                  { homeConference: query.conference },
+                  { awayConference: query.conference },
+                ],
+              },
+            ]
+          : []),
+      ],
     },
     orderBy: { startTime: "asc" },
   });

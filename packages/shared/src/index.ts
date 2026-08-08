@@ -57,6 +57,18 @@ export {
 export { EspnApiError } from "./sports/espn/client.js";
 
 export {
+  CONFERENCE_SLUGS,
+  DEFAULT_CONFERENCE_SLUG,
+  FBS_CONFERENCES,
+  conferenceShortName,
+  conferenceSlugFromEspnId,
+  getConferenceBySlug,
+  isConferenceSlug,
+  type Conference,
+  type ConferenceSlug,
+} from "./sports/espn/conferences.js";
+
+export {
   MIN_SLATE_GAMES,
   setSlateSchema,
   slateDetailSchema,

@@ -4,8 +4,34 @@ import { useApiClient } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 
 import { useEffect, useRef, useState } from "react";
-import type { SlateListResponse } from "@callsheet/shared";
-import { resolveDefaultWeek } from "@/components/week-selector";
+import type { SlateListResponse, SlateSummary } from "@callsheet/shared";
+
+/**
+ * Picks the week to land on: the current week when it has a slate, otherwise
+ * the next unlocked slate, otherwise the most recent one.
+ */
+export function resolveDefaultWeek(
+  slates: SlateSummary[],
+  currentWeek: number,
+): number {
+  if (slates.length === 0) {
+    return currentWeek;
+  }
+
+  const slateWeeks = new Set(slates.map((slate) => slate.week));
+
+  if (slateWeeks.has(currentWeek)) {
+    return currentWeek;
+  }
+
+  const upcomingSlate = slates.find((slate) => slate.week >= currentWeek && !slate.locked);
+  if (upcomingSlate) {
+    return upcomingSlate.week;
+  }
+
+  const latestSlate = slates[slates.length - 1];
+  return latestSlate?.week ?? currentWeek;
+}
 
 export function useSelectedWeek(slates: SlateListResponse | undefined) {
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
@@ -65,12 +91,17 @@ export function useSetSlate(leagueId: string) {
   });
 }
 
-export function useGames(seasonId: string | undefined, week: number, classificationId?: string) {
+export function useGames(
+  seasonId: string | undefined,
+  week: number,
+  classificationId?: string,
+  conference?: string,
+) {
   const api = useApiClient();
 
   return useQuery({
-    queryKey: ["games", seasonId, week, classificationId],
-    queryFn: () => api.getGames(seasonId!, week, classificationId),
+    queryKey: ["games", seasonId, week, classificationId, conference],
+    queryFn: () => api.getGames(seasonId!, week, classificationId, conference),
     enabled: Boolean(seasonId) && week > 0,
   });
 }

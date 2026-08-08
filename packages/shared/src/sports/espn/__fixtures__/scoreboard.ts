@@ -77,6 +77,7 @@ const scheduledGameEvent: EspnEvent = {
             id: "2628",
             displayName: "TCU Horned Frogs",
             abbreviation: "TCU",
+            conferenceId: "4",
           },
         },
         {
@@ -87,6 +88,7 @@ const scheduledGameEvent: EspnEvent = {
             id: "153",
             displayName: "North Carolina Tar Heels",
             abbreviation: "UNC",
+            conferenceId: "1",
           },
         },
       ],

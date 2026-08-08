@@ -3,7 +3,7 @@ import { Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { GameCard } from "@/components/game-card";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { WeekSelector } from "@/components/week-selector";
+import { WeekTabs } from "@/components/week-tabs";
 import {
   usePicks,
   useSelectedWeek,
@@ -144,13 +144,19 @@ function PicksPage() {
         </Link>
       </div>
 
-      <WeekSelector
+      <WeekTabs
         weeks={WEEKS}
         selectedWeek={selectedWeek}
         onWeekChange={setSelectedWeek}
         slates={slates?.slates}
       />
 
+      <div
+        id="week-panel"
+        role="tabpanel"
+        aria-labelledby={`week-tab-${selectedWeek}`}
+        className="space-y-6 pt-4"
+      >
       {locked && (
         <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
           <span>Slate locked — all members&apos; picks are visible.</span>
@@ -214,6 +220,7 @@ function PicksPage() {
           })}
         </ul>
       )}
+      </div>
     </div>
   );
 }

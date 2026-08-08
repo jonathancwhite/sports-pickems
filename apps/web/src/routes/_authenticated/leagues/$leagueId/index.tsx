@@ -9,7 +9,7 @@ import {
 import { GameCard, SlateEmptyState } from "@/components/game-card";
 import { LeagueNav } from "@/components/league-nav";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { WeekSelector } from "@/components/week-selector";
+import { WeekTabs } from "@/components/week-tabs";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   useAcceptTransfer,
@@ -288,19 +288,23 @@ function LeagueDetailPage() {
       )}
 
       <section className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            This week&apos;s slate
-          </h2>
-          <WeekSelector
-            weeks={WEEKS}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
-            slates={slates?.slates}
-            className="max-w-full"
-          />
-        </div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          This week&apos;s slate
+        </h2>
 
+        <WeekTabs
+          weeks={WEEKS}
+          selectedWeek={selectedWeek}
+          onWeekChange={setSelectedWeek}
+          slates={slates?.slates}
+        />
+
+        <div
+          id="week-panel"
+          role="tabpanel"
+          aria-labelledby={`week-tab-${selectedWeek}`}
+          className="space-y-4 pt-4"
+        >
         {slatePending ? (
           <LoadingSpinner label="Loading slate…" />
         ) : slate ? (
@@ -314,6 +318,7 @@ function LeagueDetailPage() {
         ) : (
           <SlateEmptyState week={selectedWeek} hasSlate={false} />
         )}
+        </div>
       </section>
 
       {pickSummary && (league.isCommissioner || pickSummary.locked) && (

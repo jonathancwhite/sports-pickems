@@ -4,7 +4,7 @@ import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { LeagueNav } from "@/components/league-nav";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { WeekSelector } from "@/components/week-selector";
+import { WeekTabs } from "@/components/week-tabs";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLeague, useLeagueSeasons } from "@/hooks/use-leagues";
 import {
@@ -132,17 +132,28 @@ function LeaderboardPage() {
           </button>
         </div>
 
-        {view === "weekly" && (
-          <WeekSelector
-            weeks={WEEKS}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
-            slates={slates?.slates}
-            className="max-w-full"
-          />
-        )}
       </div>
 
+      {view === "weekly" && (
+        <WeekTabs
+          weeks={WEEKS}
+          selectedWeek={selectedWeek}
+          onWeekChange={setSelectedWeek}
+          slates={slates?.slates}
+        />
+      )}
+
+      {/*
+        The same table backs both views, so it is only a tabpanel while the week
+        tabs are on screen — but it keeps the id either way so the tabs'
+        aria-controls always resolves.
+      */}
+      <div
+        id="week-panel"
+        {...(view === "weekly"
+          ? { role: "tabpanel", "aria-labelledby": `week-tab-${selectedWeek}` }
+          : {})}
+      >
       {leaderboardPending ? (
         <LoadingSpinner label="Loading standings…" />
       ) : !hasScoredPicks ? (
@@ -194,6 +205,7 @@ function LeaderboardPage() {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }

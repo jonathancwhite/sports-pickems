@@ -17,6 +17,8 @@ type SlateWithGames = {
       awayTeam: string;
       homeTeamAbbr: string | null;
       awayTeamAbbr: string | null;
+      homeConference: string | null;
+      awayConference: string | null;
       startTime: Date;
       week: number;
       status: string;
@@ -116,6 +118,8 @@ function toSlateGame(
     awayTeam: game.awayTeam,
     homeTeamAbbr: game.homeTeamAbbr,
     awayTeamAbbr: game.awayTeamAbbr,
+    homeConference: game.homeConference,
+    awayConference: game.awayConference,
     startTime: game.startTime.toISOString(),
     week: game.week,
     status: game.status as SlateDetail["games"][number]["status"],

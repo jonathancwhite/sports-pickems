@@ -1,4 +1,5 @@
 import { espnFetch, type EspnFetchOptions } from "./client.js";
+import { conferenceSlugFromEspnId } from "./conferences.js";
 import type { EspnEvent, EspnScoreboard } from "./types.js";
 
 /** ESPN group ID for NCAA FBS */
@@ -18,6 +19,9 @@ export interface MappedGame {
   awayTeam: string;
   homeTeamAbbr: string | null;
   awayTeamAbbr: string | null;
+  /** Conference slug, or null when the team is outside FBS (e.g. an FCS opponent). */
+  homeConference: string | null;
+  awayConference: string | null;
   startTime: Date;
   week: number;
   status: GameStatus;
@@ -105,6 +109,8 @@ export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame |
     awayTeam: away.team.displayName,
     homeTeamAbbr: home.team.abbreviation ?? null,
     awayTeamAbbr: away.team.abbreviation ?? null,
+    homeConference: conferenceSlugFromEspnId(home.team.conferenceId),
+    awayConference: conferenceSlugFromEspnId(away.team.conferenceId),
     startTime: new Date(competition.date ?? event.date),
     week,
     status,

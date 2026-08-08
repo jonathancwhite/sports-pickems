@@ -19,6 +19,8 @@ export interface EspnTeam {
   id: string;
   displayName: string;
   abbreviation: string;
+  /** ESPN group id for the team's conference. Absent on some non-FBS teams. */
+  conferenceId?: string;
 }
 
 export interface EspnCompetitor {

@@ -2,8 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Lock, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { WeekSelector } from "@/components/week-selector";
-import { MIN_SLATE_GAMES } from "@callsheet/shared";
+import { ConferenceFilter } from "@/components/conference-filter";
+import { ScheduleGameCard } from "@/components/schedule-game-card";
+import { WeekTabs } from "@/components/week-tabs";
+import {
+  DEFAULT_CONFERENCE_SLUG,
+  MIN_SLATE_GAMES,
+  conferenceShortName,
+  type ConferenceSlug,
+} from "@callsheet/shared";
 import {
   useGames,
   useSelectedWeek,
@@ -13,7 +20,6 @@ import {
   WEEKS,
 } from "@/hooks/use-slates-picks";
 import { useLeague } from "@/hooks/use-leagues";
-import { formatKickoff } from "@/lib/format";
 import { showApiError, showSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +33,9 @@ function CommissionerSchedulePage() {
   const { data: slates } = useSlates(leagueId);
   const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
   const [selectedGameIds, setSelectedGameIds] = useState<Set<string>>(new Set());
+  const [conference, setConference] = useState<ConferenceSlug | null>(
+    DEFAULT_CONFERENCE_SLUG,
+  );
 
   const { data: weekGames, isPending: gamesPending } = useGames(
     league?.season?.id,
@@ -62,6 +71,56 @@ function CommissionerSchedulePage() {
     }
     return false;
   }, [existingSlate, selectedGameIds, selectedCount]);
+
+  const allGames = useMemo(() => weekGames?.games ?? [], [weekGames]);
+
+  /**
+   * Counts every game once per conference represented on the field, so a
+   * cross-conference matchup contributes to both chips.
+   */
+  const conferenceCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const game of allGames) {
+      const sides = new Set(
+        [game.homeConference, game.awayConference].filter(
+          (slug): slug is string => slug !== null,
+        ),
+      );
+      for (const slug of sides) {
+        counts.set(slug, (counts.get(slug) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [allGames]);
+
+  const visibleGames = useMemo(() => {
+    if (!conference) {
+      return allGames;
+    }
+    return allGames.filter(
+      (game) =>
+        game.homeConference === conference || game.awayConference === conference,
+    );
+  }, [allGames, conference]);
+
+  /**
+   * Slates are week-wide, so a commissioner can have games selected that the
+   * active conference filter hides. Surface that rather than let the count in
+   * the summary bar look wrong.
+   */
+  const hiddenSelectedCount = useMemo(() => {
+    if (!conference) {
+      return 0;
+    }
+    const visibleIds = new Set(visibleGames.map((game) => game.id));
+    let hidden = 0;
+    for (const id of selectedGameIds) {
+      if (!visibleIds.has(id)) {
+        hidden += 1;
+      }
+    }
+    return hidden;
+  }, [conference, visibleGames, selectedGameIds]);
 
   if (leaguePending) {
     return <LoadingSpinner label="Loading schedule…" />;
@@ -140,14 +199,22 @@ function CommissionerSchedulePage() {
         </Link>
       </div>
 
-      <WeekSelector
+      <WeekTabs
         weeks={WEEKS}
         selectedWeek={selectedWeek}
         onWeekChange={setSelectedWeek}
         slates={slates?.slates}
       />
 
-      <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div id="week-panel" role="tabpanel" aria-labelledby={`week-tab-${selectedWeek}`}>
+        <ConferenceFilter
+          selected={conference}
+          onChange={setConference}
+          counts={conferenceCounts}
+          totalCount={allGames.length}
+        />
+
+      <div className="mt-4 flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p
             className={cn(
@@ -157,6 +224,13 @@ function CommissionerSchedulePage() {
           >
             {selectedCount} of {MIN_SLATE_GAMES} minimum selected
           </p>
+          {hiddenSelectedCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {hiddenSelectedCount} selected{" "}
+              {hiddenSelectedCount === 1 ? "game is" : "games are"} outside the{" "}
+              {conferenceShortName(conference)} filter
+            </p>
+          )}
           {isLocked && (
             <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Lock className="size-3" aria-hidden />
@@ -175,46 +249,40 @@ function CommissionerSchedulePage() {
         </button>
       </div>
 
-      {gamesPending || slatePending ? (
-        <LoadingSpinner label="Loading games…" />
-      ) : weekGames?.games.length === 0 ? (
-        <div className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-          No games found for Week {selectedWeek}. Sync game data or try another week.
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {weekGames?.games.map((game) => {
-            const checked = selectedGameIds.has(game.id);
-            return (
+        {gamesPending || slatePending ? (
+          <LoadingSpinner label="Loading games…" />
+        ) : allGames.length === 0 ? (
+          <div className="mt-4 rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            No games found for Week {selectedWeek}. Sync game data or try another week.
+          </div>
+        ) : visibleGames.length === 0 ? (
+          <div className="mt-4 space-y-3 rounded-lg border border-dashed px-4 py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              No {conferenceShortName(conference)} games in Week {selectedWeek}.
+            </p>
+            <button
+              type="button"
+              onClick={() => setConference(null)}
+              className="text-sm text-primary hover:underline"
+            >
+              Show all {allGames.length} games
+            </button>
+          </div>
+        ) : (
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {visibleGames.map((game) => (
               <li key={game.id}>
-                <label
-                  className={cn(
-                    "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
-                    checked ? "border-primary bg-primary/5" : "bg-card hover:bg-muted/30",
-                    isLocked && "cursor-not-allowed opacity-70",
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={isLocked}
-                    onChange={() => toggleGame(game.id)}
-                    className="size-4 shrink-0 rounded border"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">
-                      {game.awayTeam} @ {game.homeTeam}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatKickoff(game.startTime)}
-                    </p>
-                  </div>
-                </label>
+                <ScheduleGameCard
+                  game={game}
+                  selected={selectedGameIds.has(game.id)}
+                  disabled={isLocked}
+                  onToggle={toggleGame}
+                />
               </li>
-            );
-          })}
-        </ul>
-      )}
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
