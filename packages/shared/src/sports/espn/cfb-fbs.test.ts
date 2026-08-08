@@ -55,6 +55,8 @@ describe("mapEspnEventToGame", () => {
       awayTeam: "North Carolina Tar Heels",
       homeTeamAbbr: "TCU",
       awayTeamAbbr: "UNC",
+      homeTeamLogo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2628.png",
+      awayTeamLogo: "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png",
       homeConference: "big-12",
       awayConference: "acc",
       startTime: new Date("2026-08-29T16:00:00.000Z"),

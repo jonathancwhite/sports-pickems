@@ -14,7 +14,7 @@ export interface PaletteOption {
   dark: PaletteColors;
 }
 
-/** Every palette shares the mono grayscale base; only the accent differs. */
+/** Every palette shares the same neutral grayscale base; only the accent differs. */
 const NEUTRAL = {
   light: { background: "oklch(0.985 0 0)", foreground: "oklch(0.145 0 0)" },
   dark: { background: "oklch(0.145 0 0)", foreground: "oklch(0.985 0 0)" },
@@ -29,10 +29,10 @@ const NEUTRAL = {
 export const PALETTE_OPTIONS: PaletteOption[] = [
   {
     id: "mono",
-    label: "Mono",
-    description: "Minimal grayscale, zero tint",
-    light: { primary: "oklch(0.205 0 0)", ...NEUTRAL.light },
-    dark: { primary: "oklch(0.922 0 0)", ...NEUTRAL.dark },
+    label: "Gold",
+    description: "Warm gold accent on the neutral base",
+    light: { primary: "oklch(0.48 0.11 72)", ...NEUTRAL.light },
+    dark: { primary: "oklch(0.8 0.11 85)", ...NEUTRAL.dark },
   },
   {
     id: "classic",
@@ -64,8 +64,12 @@ export const PALETTE_OPTIONS: PaletteOption[] = [
   },
 ];
 
-export function getPaletteColors(palette: Palette, mode: "light" | "dark"): PaletteColors {
-  const option = PALETTE_OPTIONS.find((entry) => entry.id === palette) ?? PALETTE_OPTIONS[0];
+export function getPaletteColors(
+  palette: Palette,
+  mode: "light" | "dark",
+): PaletteColors {
+  const option =
+    PALETTE_OPTIONS.find((entry) => entry.id === palette) ?? PALETTE_OPTIONS[0];
   return option[mode];
 }
 

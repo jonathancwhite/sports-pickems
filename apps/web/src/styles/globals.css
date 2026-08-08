@@ -3,13 +3,19 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * The base tokens are the "mono" palette — a pure grayscale, zero-tint theme.
- * Every other palette shares this neutral base and overrides only the accent
- * tokens (--primary, --primary-foreground, --ring) via data-palette on <html>.
+ * The base tokens are the "mono" palette — a neutral grayscale base with a warm
+ * gold accent. Every other palette shares this neutral base and overrides only
+ * the accent tokens (--primary, --primary-foreground, --ring) via data-palette
+ * on <html>.
  * Light overrides use :root[data-palette] and dark :root[data-palette].dark so
  * the dark blocks always out-specify the light ones regardless of order.
  * Swatch colors for the settings picker live in src/lib/palettes.ts — keep the
  * accent values there in sync with these blocks.
+ *
+ * Every accent is darker in light mode than in dark. --primary also drives
+ * `text-primary` links, so a bright accent would fail contrast against a white
+ * background: light mode pairs a deep accent with white text, dark mode a
+ * bright accent with near-black text.
  */
 
 :root {
@@ -20,7 +26,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.48 0.11 72);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.955 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -31,7 +37,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.898 0 0);
   --input: oklch(0.898 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: oklch(0.48 0.11 72);
 }
 
 .dark {
@@ -41,7 +47,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.19 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
+  --primary: oklch(0.8 0.11 85);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.255 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -52,7 +58,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.8 0.11 85);
 }
 
 /* Classic — blue accent */
@@ -139,10 +145,6 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family:
-      Inter,
-      ui-sans-serif,
-      system-ui,
-      sans-serif;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   }
 }

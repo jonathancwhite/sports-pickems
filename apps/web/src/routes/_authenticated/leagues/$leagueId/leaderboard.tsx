@@ -27,13 +27,19 @@ function LeaderboardPage() {
   const { data: slates } = useSlates(leagueId);
   const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
   const [view, setView] = useState<"weekly" | "season">("weekly");
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>(undefined);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>(
+    undefined,
+  );
 
   const activeSeasonId = selectedSeasonId ?? league?.season?.id;
-  const selectedSeason = seasonsData?.seasons.find((season) => season.id === activeSeasonId);
+  const selectedSeason = seasonsData?.seasons.find(
+    (season) => season.id === activeSeasonId,
+  );
   const isHistoricalSeason = selectedSeason && !selectedSeason.isCurrent;
   const isReadOnlySeason =
-    isHistoricalSeason || selectedSeason?.status === "completed" || league?.status === "archived";
+    isHistoricalSeason ||
+    selectedSeason?.status === "completed" ||
+    league?.status === "archived";
 
   const weekForQuery = view === "weekly" ? selectedWeek : undefined;
   const { data: leaderboard, isPending: leaderboardPending } = useLeaderboard(
@@ -48,11 +54,13 @@ function LeaderboardPage() {
 
   if (!league) {
     return (
-      <p className="text-sm text-destructive">League not found or you don&apos;t have access.</p>
+      <p className="text-sm text-destructive">
+        League not found or you don&apos;t have access.
+      </p>
     );
   }
 
-  const hasScoredPicks = (leaderboard?.entries.some((entry) => entry.total > 0) ?? false);
+  const hasScoredPicks = leaderboard?.entries.some((entry) => entry.total > 0) ?? false;
 
   return (
     <div className="space-y-6">
@@ -83,7 +91,9 @@ function LeaderboardPage() {
             value={activeSeasonId ?? ""}
             onChange={(event) =>
               setSelectedSeasonId(
-                event.target.value === league.season?.id ? undefined : event.target.value,
+                event.target.value === league.season?.id
+                  ? undefined
+                  : event.target.value,
               )
             }
             className="rounded-md border bg-background px-3 py-2"
@@ -112,7 +122,7 @@ function LeaderboardPage() {
             className={cn(
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               view === "weekly"
-                ? "bg-primary text-primary-foreground"
+                ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -124,14 +134,13 @@ function LeaderboardPage() {
             className={cn(
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               view === "season"
-                ? "bg-primary text-primary-foreground"
+                ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
             Season
           </button>
         </div>
-
       </div>
 
       {view === "weekly" && (
@@ -154,57 +163,57 @@ function LeaderboardPage() {
           ? { role: "tabpanel", "aria-labelledby": `week-tab-${selectedWeek}` }
           : {})}
       >
-      {leaderboardPending ? (
-        <LoadingSpinner label="Loading standings…" />
-      ) : !hasScoredPicks ? (
-        <EmptyState
-          icon={Trophy}
-          title="No picks scored yet"
-          description="Standings will appear once games finish and picks are scored."
-        />
-      ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="px-4 py-3 font-semibold">Rank</th>
-                <th className="px-4 py-3 font-semibold">Player</th>
-                <th className="px-4 py-3 font-semibold text-right">Correct</th>
-                <th className="px-4 py-3 font-semibold text-right">Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard?.entries.map((entry) => (
-                <tr
-                  key={entry.userId}
-                  className={cn(
-                    "border-b last:border-b-0",
-                    entry.userId === currentUser?.id && "bg-primary/5",
-                  )}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <RankDisplay rank={entry.rank} />
-                      {view === "weekly" && entry.isWeekWinner && (
-                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                          Week Winner
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-medium">{entry.username}</td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">
-                    {entry.correct}/{entry.total}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold">
-                    {formatPoints(entry.points)}
-                  </td>
+        {leaderboardPending ? (
+          <LoadingSpinner label="Loading standings…" />
+        ) : !hasScoredPicks ? (
+          <EmptyState
+            icon={Trophy}
+            title="No picks scored yet"
+            description="Standings will appear once games finish and picks are scored."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="px-4 py-3 font-semibold">Rank</th>
+                  <th className="px-4 py-3 font-semibold">Player</th>
+                  <th className="px-4 py-3 font-semibold text-right">Correct</th>
+                  <th className="px-4 py-3 font-semibold text-right">Points</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {leaderboard?.entries.map((entry) => (
+                  <tr
+                    key={entry.userId}
+                    className={cn(
+                      "border-b last:border-b-0",
+                      entry.userId === currentUser?.id && "bg-primary/5",
+                    )}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <RankDisplay rank={entry.rank} />
+                        {view === "weekly" && entry.isWeekWinner && (
+                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                            Week Winner
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-medium">{entry.username}</td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {entry.correct}/{entry.total}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold">
+                      {formatPoints(entry.points)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

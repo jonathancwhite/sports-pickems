@@ -173,6 +173,20 @@ export function useStartNewSeason() {
   });
 }
 
+export function useStartSeason() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (leagueId: string) => api.startSeason(leagueId),
+    onSuccess: (league) => {
+      queryClient.invalidateQueries({ queryKey: MY_LEAGUES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["league", league.id] });
+      queryClient.invalidateQueries({ queryKey: ["leagueSeasons", league.id] });
+    },
+  });
+}
+
 export function useJoinSeason() {
   const api = useApiClient();
   const queryClient = useQueryClient();
@@ -199,8 +213,10 @@ export function useUpdateLeague() {
       input: import("@callsheet/shared").UpdateLeagueInput;
     }) => api.updateLeague(leagueId, input),
     onSuccess: (league) => {
-      queryClient.setQueryData(["league", league.id], (old: import("@callsheet/shared").LeagueDetail | undefined) =>
-        old ? { ...old, ...league } : league,
+      queryClient.setQueryData(
+        ["league", league.id],
+        (old: import("@callsheet/shared").LeagueDetail | undefined) =>
+          old ? { ...old, ...league } : league,
       );
       queryClient.invalidateQueries({ queryKey: MY_LEAGUES_QUERY_KEY });
     },

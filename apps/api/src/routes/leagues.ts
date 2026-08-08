@@ -26,20 +26,12 @@ import {
 import { getUserPlan } from "../services/billing.js";
 import type { NextFunction, Response } from "express";
 import { getWaitlist, joinWaitlist, leaveWaitlist } from "../services/waitlist.js";
-import {
-  getPickSummary,
-  getPicks,
-  submitPicks,
-} from "../services/picks.js";
+import { getPickSummary, getPicks, submitPicks } from "../services/picks.js";
 import {
   getSeasonLeaderboard,
   getWeeklyLeaderboard,
 } from "../services/leaderboards.js";
-import {
-  getSlate,
-  listSlates,
-  setSlate,
-} from "../services/slates.js";
+import { getSlate, listSlates, setSlate } from "../services/slates.js";
 import {
   acceptCommissionerTransfer,
   declineCommissionerTransfer,
@@ -50,6 +42,7 @@ import {
   joinSeason,
   listLeagueSeasons,
   startNewSeason,
+  startSeason,
   updateLeague,
 } from "../services/season-lifecycle.js";
 
@@ -113,7 +106,9 @@ leaguesRouter.post("/", async (req, res, next) => {
 
     const parsed = createLeagueSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+      res
+        .status(400)
+        .json({ error: "Invalid request", details: parsed.error.flatten() });
       return;
     }
 
@@ -173,7 +168,9 @@ leaguesRouter.post("/invite/:code/join", async (req, res, next) => {
 
     const parsed = joinLeagueSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+      res
+        .status(400)
+        .json({ error: "Invalid request", details: parsed.error.flatten() });
       return;
     }
 
@@ -395,7 +392,9 @@ leaguesRouter.get("/:id/slates/:week", async (req, res, next) => {
     });
 
     if (!slate) {
-      res.status(404).json({ error: "slate_not_found", message: "No slate set for this week" });
+      res
+        .status(404)
+        .json({ error: "slate_not_found", message: "No slate set for this week" });
       return;
     }
 
@@ -428,7 +427,9 @@ leaguesRouter.put("/:id/slates/:week", async (req, res, next) => {
 
     const parsed = setSlateSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+      res
+        .status(400)
+        .json({ error: "Invalid request", details: parsed.error.flatten() });
       return;
     }
 
@@ -579,7 +580,9 @@ leaguesRouter.put("/:id/picks/:week", async (req, res, next) => {
 
     const parsed = submitPicksSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+      res
+        .status(400)
+        .json({ error: "Invalid request", details: parsed.error.flatten() });
       return;
     }
 
@@ -619,6 +622,28 @@ leaguesRouter.get("/:id/seasons", async (req, res, next) => {
   }
 });
 
+leaguesRouter.post("/:id/season/start", async (req, res, next) => {
+  try {
+    const { userId: clerkId } = getAuth(req);
+    if (!clerkId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const league = await startSeason(clerkId, req.params.id);
+    res.json(league);
+  } catch (error) {
+    if (error instanceof LeagueServiceError) {
+      res.status(error.status).json({
+        error: error.code ?? "league_error",
+        message: error.message,
+      });
+      return;
+    }
+    next(error);
+  }
+});
+
 leaguesRouter.post("/:id/seasons", async (req, res, next) => {
   try {
     const { userId: clerkId } = getAuth(req);
@@ -629,7 +654,9 @@ leaguesRouter.post("/:id/seasons", async (req, res, next) => {
 
     const parsed = startSeasonSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+      res
+        .status(400)
+        .json({ error: "Invalid request", details: parsed.error.flatten() });
       return;
     }
 
@@ -678,7 +705,10 @@ leaguesRouter.get("/:id/settings", async (req, res, next) => {
     }
 
     const settings = await getLeagueSettings(clerkId, req.params.id);
-    const pendingTransferForUser = await getPendingTransferForUser(clerkId, req.params.id);
+    const pendingTransferForUser = await getPendingTransferForUser(
+      clerkId,
+      req.params.id,
+    );
     res.json({ ...settings, pendingTransferForUser });
   } catch (error) {
     if (error instanceof LeagueServiceError) {
@@ -702,7 +732,9 @@ leaguesRouter.patch("/:id", async (req, res, next) => {
 
     const parsed = updateLeagueSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+      res
+        .status(400)
+        .json({ error: "Invalid request", details: parsed.error.flatten() });
       return;
     }
 
@@ -746,11 +778,17 @@ leaguesRouter.post("/:id/transfer", async (req, res, next) => {
 
     const parsed = transferCommissionerSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+      res
+        .status(400)
+        .json({ error: "Invalid request", details: parsed.error.flatten() });
       return;
     }
 
-    const transfer = await initiateCommissionerTransfer(clerkId, req.params.id, parsed.data);
+    const transfer = await initiateCommissionerTransfer(
+      clerkId,
+      req.params.id,
+      parsed.data,
+    );
     res.status(201).json(transfer);
   } catch (error) {
     if (error instanceof LeagueServiceError) {

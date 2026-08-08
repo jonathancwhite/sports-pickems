@@ -78,6 +78,7 @@ const scheduledGameEvent: EspnEvent = {
             displayName: "TCU Horned Frogs",
             abbreviation: "TCU",
             conferenceId: "4",
+            logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2628.png",
           },
         },
         {
@@ -89,6 +90,7 @@ const scheduledGameEvent: EspnEvent = {
             displayName: "North Carolina Tar Heels",
             abbreviation: "UNC",
             conferenceId: "1",
+            logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png",
           },
         },
       ],
