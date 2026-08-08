@@ -136,6 +136,48 @@ secrets above are present. They can also be triggered manually via
 
 ---
 
+## Local webhook development (cloudflared)
+
+Clerk pushes webhooks over the public internet, so `localhost:3001` is
+unreachable and Clerk ships no CLI forwarder (there is no `clerk listen`
+equivalent to `stripe listen`). Use a Cloudflare quick tunnel — free, no
+account, no request cap.
+
+See [`clerk-webhooks-local.html`](./clerk-webhooks-local.html) for the
+click-by-click walkthrough. Short version:
+
+```bash
+# Install once (Windows, no admin required)
+curl -L -o "$LOCALAPPDATA/cloudflared/cloudflared.exe" \
+  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
+# macOS: brew install cloudflared
+
+# Run alongside `pnpm dev`
+cloudflared tunnel --url http://localhost:3001
+```
+
+The command prints a `https://<random>.trycloudflare.com` URL. In your Clerk
+**development** instance → **Webhooks** → **Add Endpoint**:
+
+1. URL = `https://<random>.trycloudflare.com/api/webhooks/clerk`
+2. Subscribe to exactly the events the handler processes
+   (`apps/api/src/routes/webhooks/clerk.ts`): `user.created`, `user.updated`,
+   `user.deleted`, `subscription.created`, `subscription.updated`,
+   `subscription.active`, `subscription.pastDue`, `subscriptionItem.canceled`,
+   `subscriptionItem.ended`.
+3. Copy that endpoint's signing secret (`whsec_…`) into `CLERK_WEBHOOK_SECRET`
+   in your local `.env` and restart the API.
+
+The quick-tunnel hostname is regenerated on every restart, so step 1 has to be
+repeated each session. A named tunnel on a domain you own gives a stable URL if
+that churn gets old.
+
+> The webhook route is mounted with `express.raw()` **before** `express.json()`
+> and before `clerkMiddleware()` (`apps/api/src/index.ts`). Signature
+> verification needs the unparsed body — do not move it below the JSON parser.
+
+---
+
 ## Database migrations
 
 - Migrations run automatically on API deploy via the Fly `release_command`
