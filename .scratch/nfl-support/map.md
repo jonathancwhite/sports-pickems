@@ -37,7 +37,8 @@ NFL live in Callsheet at full parity with NCAA FBS — synced, pickable, scored,
 - The NFL scoreboard returns **no `conferenceId`** on `competitors[].team` — team keys are `id, uid, location, name, abbreviation, displayName, shortDisplayName, color, alternateColor, isActive, venue, links, logo`. This is why Q10 is a static table rather than a payload read. Site-v2 `/teams` and `/standings` don't carry it either; only the core API's group ref-walk does.
 - NFL regular season is **18 weeks** (`leagues[0].calendar` entry `value: "2"`). `fetchFbsRegularSeasonWeeks`'s hardcoded 15-week fallback is wrong for NFL.
 - NFL team **logos are present**, so `team-logo.tsx` and the redesigned pick cards work unchanged.
-- NFL scoreboard path: `/sports/football/nfl/scoreboard`, same `year` / `week` / `seasontype` / `limit` params as college football, minus `groups`.
+- NFL scoreboard path: `/sports/football/nfl/scoreboard`, same `week` / `seasontype` / `limit` params as college football, minus `groups`.
+- ⚠️ **`year` is accepted but inert** — ESPN returns the current season whatever you pass, for both leagues; `dates` is the parameter that selects a season. Discovered while resolving ticket 03 and re-verified independently. Live numbers reported by tickets 02 and 03 were therefore the 2026 slate, not the season they named. Ticketed as [ESPN ignores the year param](issues/10-espn-year-param-ignored.md); it does **not** block the NFL route, since the app syncs the current season.
 
 ## Decisions so far
 
