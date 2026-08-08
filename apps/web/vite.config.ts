@@ -5,6 +5,9 @@ import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // The monorepo keeps a single `.env` at the repo root (see `.env.example`).
+  // Without this, Vite would only look for `.env` inside `apps/web`.
+  envDir: path.resolve(__dirname, "../.."),
   plugins: [
     TanStackRouterVite({
       routesDirectory: "./src/routes",
