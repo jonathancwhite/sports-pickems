@@ -1,5 +1,11 @@
 import { prisma } from "@callsheet/db";
-import type { CurrentUser, Theme, UpdatePreferences } from "@callsheet/shared";
+import {
+  DEFAULT_PALETTE,
+  paletteSchema,
+  type CurrentUser,
+  type Theme,
+  type UpdatePreferences,
+} from "@callsheet/shared";
 
 export async function findUserByClerkId(clerkId: string): Promise<CurrentUser | null> {
   const user = await prisma.user.findFirst({
@@ -16,7 +22,12 @@ export async function findUserByClerkId(clerkId: string): Promise<CurrentUser | 
     username: user.username,
     email: user.email,
     avatarUrl: user.avatarUrl,
-    preferences: { theme: user.preferences?.theme ?? "system" },
+    preferences: {
+      theme: user.preferences?.theme ?? "system",
+      // The column is free text; fall back to the default if a stored value no
+      // longer matches a known palette.
+      palette: paletteSchema.catch(DEFAULT_PALETTE).parse(user.preferences?.palette),
+    },
   };
 }
 
@@ -35,8 +46,8 @@ export async function updateUserPreferences(
 
   await prisma.userPreference.upsert({
     where: { userId: existing.id },
-    create: { userId: existing.id, theme: preferences.theme },
-    update: { theme: preferences.theme },
+    create: { userId: existing.id, ...preferences },
+    update: preferences,
   });
 
   return findUserByClerkId(clerkId);

@@ -30,7 +30,7 @@ export function ThemeToggle({ value, onChange, disabled }: ThemeToggleProps) {
         setStoredTheme(next);
         onChange(next);
       }}
-      className="flex size-9 items-center justify-center rounded-lg border bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+      className="flex size-9 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
       aria-label={label}
       title={label}
     >

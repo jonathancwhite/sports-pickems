@@ -3,21 +3,29 @@ import { Outlet } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppSidebar, MobileMenuButton } from "@/components/app-sidebar";
 import { ProBadge } from "@/components/pro-badge";
-import { ThemeProvider, getStoredTheme } from "@/components/theme-provider";
+import {
+  ThemeProvider,
+  getStoredPalette,
+  getStoredTheme,
+  useResolvedTheme,
+} from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useCurrentUser, useUpdateTheme } from "@/hooks/use-current-user";
+import { useCurrentUser, useUpdatePreferences } from "@/hooks/use-current-user";
 import { useUserPlan } from "@/hooks/use-user-plan";
+import { getClerkVariables } from "@/lib/palettes";
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: user } = useCurrentUser();
   const { isPro } = useUserPlan();
-  const updateTheme = useUpdateTheme();
+  const updatePreferences = useUpdatePreferences();
   const theme = user?.preferences.theme ?? getStoredTheme();
+  const palette = user?.preferences.palette ?? getStoredPalette();
+  const resolvedTheme = useResolvedTheme(theme);
 
   return (
     <div className="flex min-h-screen bg-background">
-      <ThemeProvider theme={theme} />
+      <ThemeProvider theme={theme} palette={palette} />
       <AppSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -31,16 +39,14 @@ export function AppShell() {
           <div className="flex items-center gap-3">
             <ThemeToggle
               value={theme}
-              onChange={(next) => updateTheme.mutate(next)}
-              disabled={updateTheme.isPending}
+              onChange={(next) => updatePreferences.mutate({ theme: next })}
+              disabled={updatePreferences.isPending}
             />
             {isPro && <ProBadge />}
             <UserButton
               afterSignOutUrl="/"
               appearance={{
-                variables: {
-                  colorPrimary: "oklch(0.546 0.215 262.881)",
-                },
+                variables: getClerkVariables(palette, resolvedTheme),
               }}
             />
           </div>

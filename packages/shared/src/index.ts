@@ -11,11 +11,14 @@ export const APP_NAME = "Callsheet";
 
 export {
   currentUserSchema,
+  DEFAULT_PALETTE,
+  paletteSchema,
   themeSchema,
   updatePreferencesSchema,
   userNotSyncedErrorSchema,
   userPreferencesSchema,
   type CurrentUser,
+  type Palette,
   type Theme,
   type UpdatePreferences,
   type UserNotSyncedError,

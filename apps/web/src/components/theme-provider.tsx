@@ -1,7 +1,9 @@
+import { DEFAULT_PALETTE, paletteSchema, type Palette } from "@callsheet/shared";
 import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 
 const THEME_STORAGE_KEY = "callsheet-theme";
+const PALETTE_STORAGE_KEY = "callsheet-palette";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -14,6 +16,10 @@ function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle("dark", resolved === "dark");
 }
 
+function applyPalette(palette: Palette) {
+  document.documentElement.dataset.palette = palette;
+}
+
 export function getStoredTheme(): Theme {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   if (stored === "light" || stored === "dark" || stored === "system") {
@@ -24,6 +30,14 @@ export function getStoredTheme(): Theme {
 
 export function setStoredTheme(theme: Theme) {
   localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
+export function getStoredPalette(): Palette {
+  return paletteSchema.catch(DEFAULT_PALETTE).parse(localStorage.getItem(PALETTE_STORAGE_KEY));
+}
+
+export function setStoredPalette(palette: Palette) {
+  localStorage.setItem(PALETTE_STORAGE_KEY, palette);
 }
 
 /**
@@ -44,12 +58,17 @@ export function useResolvedTheme(theme: Theme): "light" | "dark" {
   return theme === "system" ? systemTheme : theme;
 }
 
-export function ThemeProvider({ theme }: { theme?: Theme }) {
+export function ThemeProvider({ theme, palette }: { theme?: Theme; palette?: Palette }) {
   const activeTheme = theme ?? getStoredTheme();
+  const activePalette = palette ?? getStoredPalette();
 
   useEffect(() => {
     applyTheme(activeTheme);
   }, [activeTheme]);
+
+  useEffect(() => {
+    applyPalette(activePalette);
+  }, [activePalette]);
 
   useEffect(() => {
     if (activeTheme !== "system") {

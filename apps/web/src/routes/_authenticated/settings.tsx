@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CreditCard, ExternalLink, User } from "lucide-react";
 import { useClerk } from "@clerk/clerk-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { PalettePicker } from "@/components/palette-picker";
+import { ThemeSelect } from "@/components/theme-select";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { ProBadge } from "@/components/pro-badge";
-import { getStoredTheme } from "@/components/theme-provider";
+import { getStoredPalette, getStoredTheme } from "@/components/theme-provider";
 import { useUserBilling } from "@/hooks/use-billing";
-import { useCurrentUser, useUpdateTheme } from "@/hooks/use-current-user";
+import { useCurrentUser, useUpdatePreferences } from "@/hooks/use-current-user";
 import { useUserPlan } from "@/hooks/use-user-plan";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -18,8 +19,9 @@ function SettingsPage() {
   const { data: user, isPending } = useCurrentUser();
   const { isPro } = useUserPlan();
   const { data: billing } = useUserBilling();
-  const updateTheme = useUpdateTheme();
+  const updatePreferences = useUpdatePreferences();
   const theme = user?.preferences.theme ?? getStoredTheme();
+  const palette = user?.preferences.palette ?? getStoredPalette();
 
   if (isPending) {
     return <LoadingSpinner label="Loading settings…" />;
@@ -66,16 +68,33 @@ function SettingsPage() {
         <div className="flex items-center gap-3 border-b px-6 py-4">
           <h2 className="font-medium">Preferences</h2>
         </div>
-        <div className="px-6 py-4">
-          <p className="text-sm text-muted-foreground">
-            Choose how Callsheet looks on your device
-          </p>
-          <div className="mt-4">
-            <ThemeToggle
-              value={theme}
-              onChange={(next) => updateTheme.mutate(next)}
-              disabled={isPending || updateTheme.isPending}
-            />
+        <div className="space-y-6 px-6 py-4">
+          <div>
+            <p className="text-sm font-medium">Mode</p>
+            <p className="text-sm text-muted-foreground">
+              Light, dark, or follow your device
+            </p>
+            <div className="mt-3">
+              <ThemeSelect
+                value={theme}
+                onChange={(next) => updatePreferences.mutate({ theme: next })}
+                disabled={isPending || updatePreferences.isPending}
+              />
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Color palette</p>
+            <p className="text-sm text-muted-foreground">
+              Pick the colors Callsheet uses everywhere
+            </p>
+            <div className="mt-3">
+              <PalettePicker
+                value={palette}
+                theme={theme}
+                onChange={(next) => updatePreferences.mutate({ palette: next })}
+                disabled={isPending || updatePreferences.isPending}
+              />
+            </div>
           </div>
         </div>
       </section>

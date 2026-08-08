@@ -2,47 +2,109 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The base tokens are the "mono" palette — a pure grayscale, zero-tint theme.
+ * Every other palette shares this neutral base and overrides only the accent
+ * tokens (--primary, --primary-foreground, --ring) via data-palette on <html>.
+ * Light overrides use :root[data-palette] and dark :root[data-palette].dark so
+ * the dark blocks always out-specify the light ones regardless of order.
+ * Swatch colors for the settings picker live in src/lib/palettes.ts — keep the
+ * accent values there in sync with these blocks.
+ */
+
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.984 0.003 247.858);
-  --foreground: oklch(0.129 0.042 264.695);
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.546 0.215 262.881);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.929 0.013 255.508);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.929 0.013 255.508);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.929 0.013 255.508);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.955 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.955 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.955 0 0);
+  --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.869 0.022 252.894);
-  --input: oklch(0.869 0.022 252.894);
-  --ring: oklch(0.546 0.215 262.881);
+  --border: oklch(0.898 0 0);
+  --input: oklch(0.898 0 0);
+  --ring: oklch(0.708 0 0);
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.168 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.168 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.623 0.214 259.815);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.208 0.042 265.755);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.208 0.042 265.755);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.208 0.042 265.755);
-  --accent-foreground: oklch(0.984 0.003 247.858);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.19 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.19 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.255 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.255 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.255 0 0);
+  --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+}
+
+/* Classic — blue accent */
+:root[data-palette="classic"] {
+  --primary: oklch(0.546 0.215 262.881);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.546 0.215 262.881);
+}
+
+:root[data-palette="classic"].dark {
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(0.985 0 0);
   --ring: oklch(0.623 0.214 259.815);
+}
+
+/* Gridiron — green accent */
+:root[data-palette="gridiron"] {
+  --primary: oklch(0.48 0.12 152);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.48 0.12 152);
+}
+
+:root[data-palette="gridiron"].dark {
+  --primary: oklch(0.72 0.17 148);
+  --primary-foreground: oklch(0.205 0 0);
+  --ring: oklch(0.72 0.17 148);
+}
+
+/* Sunset — burnt orange accent */
+:root[data-palette="sunset"] {
+  --primary: oklch(0.6 0.17 42);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.6 0.17 42);
+}
+
+:root[data-palette="sunset"].dark {
+  --primary: oklch(0.72 0.16 50);
+  --primary-foreground: oklch(0.205 0 0);
+  --ring: oklch(0.72 0.16 50);
+}
+
+/* Crimson — deep red accent */
+:root[data-palette="crimson"] {
+  --primary: oklch(0.45 0.17 10);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.45 0.17 10);
+}
+
+:root[data-palette="crimson"].dark {
+  --primary: oklch(0.68 0.19 15);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.68 0.19 15);
 }
 
 @theme inline {

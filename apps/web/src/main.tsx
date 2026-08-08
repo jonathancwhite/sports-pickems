@@ -4,7 +4,8 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
-import { ThemeProvider, getStoredTheme } from "./components/theme-provider";
+import { ThemeProvider, getStoredPalette, getStoredTheme } from "./components/theme-provider";
+import { getClerkVariables } from "./lib/palettes";
 import "./styles/globals.css";
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -32,11 +33,19 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// Snapshot of the stored preferences at load time. Clerk needs concrete color
+// values, so this doesn't track mid-session palette changes — the signed-in
+// <UserButton> in the app shell passes its own live appearance.
+const storedTheme = getStoredTheme();
+const resolvedMode =
+  storedTheme === "system"
+    ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light"
+    : storedTheme;
+
 const clerkAppearance = {
-  variables: {
-    colorPrimary: "oklch(0.546 0.215 262.881)",
-    colorText: "oklch(0.129 0.042 264.695)",
-  },
+  variables: getClerkVariables(getStoredPalette(), resolvedMode),
 };
 
 const rootElement = document.getElementById("root");
@@ -48,7 +57,7 @@ createRoot(rootElement).render(
   <StrictMode>
     <ClerkProvider publishableKey={publishableKey} appearance={clerkAppearance}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={getStoredTheme()} />
+        <ThemeProvider theme={storedTheme} palette={getStoredPalette()} />
         <RouterProvider router={router} />
       </QueryClientProvider>
     </ClerkProvider>

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Theme } from "@callsheet/shared";
+import type { UpdatePreferences } from "@callsheet/shared";
 import { useAuth } from "@clerk/clerk-react";
 import { ApiError, useApiClient } from "@/lib/api";
 import { showApiError } from "@/lib/toast";
@@ -30,33 +30,33 @@ export function useCurrentUser() {
   });
 }
 
-export function useUpdateTheme() {
+export function useUpdatePreferences() {
   const api = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (theme: Theme) => api.updatePreferences({ theme }),
-    onMutate: async (theme) => {
+    mutationFn: (preferences: UpdatePreferences) => api.updatePreferences(preferences),
+    onMutate: async (preferences) => {
       await queryClient.cancelQueries({ queryKey: CURRENT_USER_QUERY_KEY });
       const previous = queryClient.getQueryData(CURRENT_USER_QUERY_KEY);
 
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, (old: unknown) => {
-        if (!old || typeof old !== "object") {
+        if (!old || typeof old !== "object" || !("preferences" in old)) {
           return old;
         }
         return {
           ...old,
-          preferences: { theme },
+          preferences: { ...(old.preferences as object), ...preferences },
         };
       });
 
       return { previous };
     },
-    onError: (error, _theme, context) => {
+    onError: (error, _preferences, context) => {
       if (context?.previous) {
         queryClient.setQueryData(CURRENT_USER_QUERY_KEY, context.previous);
       }
-      showApiError(error, "Failed to update theme");
+      showApiError(error, "Failed to update preferences");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
