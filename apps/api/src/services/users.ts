@@ -53,6 +53,8 @@ interface ClerkUserData {
   email_addresses: ClerkEmailAddress[];
   primary_email_address_id: string | null;
   username: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
   image_url: string | null;
 }
 
@@ -74,9 +76,33 @@ function getPrimaryEmail(data: ClerkUserData): {
   };
 }
 
+/**
+ * `username` is the user's public handle — it appears on leaderboards, league
+ * rosters, pick reveals, and transfer emails, not just the dashboard greeting.
+ * Clerk only populates `username` when the instance has Username enabled, and
+ * OAuth sign-ups (Google) leave it null otherwise, so fall back through the
+ * profile fields before resorting to the opaque Clerk id.
+ */
+export function resolveUsername(data: ClerkUserData, email: string): string {
+  const candidates = [
+    data.username,
+    [data.first_name, data.last_name].filter(Boolean).join(" "),
+    email.split("@")[0],
+  ];
+
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return data.id;
+}
+
 export async function upsertUserFromClerk(data: ClerkUserData): Promise<void> {
   const { email, isVerified } = getPrimaryEmail(data);
-  const username = data.username ?? data.id;
+  const username = resolveUsername(data, email);
   const now = new Date();
 
   const existing = await prisma.user.findUnique({
