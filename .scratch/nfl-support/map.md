@@ -44,6 +44,7 @@ NFL live in Callsheet at full parity with NCAA FBS — synced, pickable, scored,
 <!-- one line per closed ticket -->
 
 - [Rename the conference concept to group](issues/01-rename-conference-to-group.md) — done in `473d8ff`; `Game.homeGroup`/`awayGroup` and `?group=` replace the conference naming end to end, 902 existing rows preserved through the rename. `slates.ts` also carried the fields and was folded in; the FBS-specific tables and the `ConferenceFilter` component are untouched, left for 06 and 07.
+- [Split the ESPN adapter into shared mapping + LeagueConfig](issues/02-split-espn-adapter.md) — done in `c865912`; `scoreboard.ts` holds the shared mapping, `leagues.ts` holds `LEAGUE_CONFIGS` keyed by classification slug, and `fetchScoreboard`/`fetchRegularSeasonWeeks` take that slug. Verified live against ESPN. The FBS-only guard in `games.ts` is deliberately still in place — 04 removes it.
 
 ## Not yet specified
 

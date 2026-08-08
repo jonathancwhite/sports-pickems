@@ -1,7 +1,7 @@
 # Split the ESPN adapter into shared mapping + LeagueConfig
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 01
 
 ## Question
@@ -25,3 +25,18 @@ Keep `packages/shared/src/index.ts` exports coherent — several are named `fetc
 The existing tests (`cfb-fbs.test.ts`, `conferences.test.ts`, `client.test.ts`) and `__fixtures__` must keep passing — the FBS behaviour is unchanged by this ticket, only relocated. Use `/tdd`: move the tests first, then the code.
 
 **Do not** copy `cfb-fbs.ts` to `nfl.ts` and diverge — two near-identical mappers will drift.
+
+## Answer
+
+Done on `feat/nfl-01-rename-group`, commit `c865912` — 7 files, +154/-43. `cfb-fbs.ts` became `scoreboard.ts` (79% similarity, so git tracked it as a rename) and its test became `scoreboard.test.ts`.
+
+`LeagueConfig` landed as specified: `classificationSlug`, `path`, `extraParams`, `regularSeasonWeekFallback`, `groupForTeam(team)`. `LEAGUE_CONFIGS` is keyed by classification slug and currently holds only `ncaa-fbs`. `fetchFbsScoreboard` / `fetchFbsRegularSeasonWeeks` are now `fetchScoreboard(classificationSlug, params)` / `fetchRegularSeasonWeeks(classificationSlug, season)`.
+
+Verified beyond the type checker, since a relocation can typecheck and still send the wrong request — ran the new code path against the **live ESPN API**: the calendar yields 15 FBS regular-season weeks, 2025 week 5 maps 59 games with 0 errors, all 11 conference groups resolve, logos present. `turbo run typecheck lint test` — 21/21 tasks, 75 tests.
+
+### Notes for later tickets
+
+- **`requireLeagueConfig` throws a plain `Error`**, not a `GamesServiceError` — `packages/shared` has no dependency on the API's error type. [[04-sync-loop-across-classifications]] should skip classifications with no config rather than let this reach a request handler; `syncableClassificationSlugs()` is exported for exactly that.
+- **The FBS-only guard in `games.ts` is untouched.** `resolveFbsClassification` still rejects anything but `ncaa-fbs` with `unsupported_classification`. That was deliberate — removing it is 04's job — so NFL sync is still blocked at the service layer even though the adapter now supports it.
+- **`ESPN_FBS_GROUP_ID` moved** from the adapter to `leagues.ts`, where it is the FBS config's `extraParams.groups`. Still exported from the package root.
+- **Prettier drift**: running prettier over `sports/espn/*.ts` reformatted `conferences.ts`, `client.ts`, `client.test.ts`, and `types.ts`, which this ticket never touched. Reverted, so the diff stays honest — but the repo is not prettier-clean on those files, which is worth knowing before someone runs a formatter wholesale.
