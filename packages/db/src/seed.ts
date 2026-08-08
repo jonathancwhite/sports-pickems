@@ -1,124 +1,113 @@
 import { fetchScoreboard } from "@callsheet/shared";
 import { prisma } from "./client.js";
+import { CATALOG_SEASON_YEAR, seedCatalog } from "./seed-catalog.js";
 
-const FBS_CLASSIFICATION_SLUG = "ncaa-fbs";
-const SEED_SEASON_YEAR = 2026;
+const SEED_SEASON_YEAR = CATALOG_SEASON_YEAR;
 const SEED_WEEKS = [1, 2, 3];
 
+/**
+ * Classifications the dev seed pulls real games for. Each must exist in the
+ * catalog seed and have a `LeagueConfig` in `@callsheet/shared`.
+ *
+ * Note ESPN's scoreboard returns the *current* season whatever `year` is sent,
+ * so these are the current season's games regardless of `SEED_SEASON_YEAR`.
+ */
+const SEED_CLASSIFICATIONS = [
+  { slug: "ncaa-fbs", label: "NCAA FBS" },
+  { slug: "nfl", label: "NFL" },
+] as const;
+
 export async function seed() {
-  const football = await prisma.sport.upsert({
-    where: { slug: "football" },
-    create: {
-      slug: "football",
-      name: "Football",
-      active: true,
-    },
-    update: {},
-  });
+  await seedCatalog();
 
-  const classification = await prisma.classification.upsert({
-    where: {
-      sportId_slug: {
-        sportId: football.id,
-        slug: "ncaa-fbs",
-      },
-    },
-    create: {
-      sportId: football.id,
-      slug: "ncaa-fbs",
-      name: "NCAA FBS",
-      tier: "core",
-      active: true,
-    },
-    update: {},
-  });
-
-  const season = await prisma.season.upsert({
-    where: {
-      classificationId_year: {
-        classificationId: classification.id,
-        year: SEED_SEASON_YEAR,
-      },
-    },
-    create: {
-      classificationId: classification.id,
-      year: SEED_SEASON_YEAR,
-      status: "upcoming",
-    },
-    update: {},
-  });
-
-  console.log(`Seeded: Football / NCAA FBS / ${SEED_SEASON_YEAR} season`);
-
-  let synced = 0;
+  let totalSynced = 0;
   const errors: string[] = [];
 
-  for (const week of SEED_WEEKS) {
-    try {
-      const { games: mappedGames, errors: mappingErrors } = await fetchScoreboard(
-        FBS_CLASSIFICATION_SLUG,
-        {
-          season: SEED_SEASON_YEAR,
-          week,
-        },
-      );
+  for (const { slug, label } of SEED_CLASSIFICATIONS) {
+    const season = await prisma.season.findFirst({
+      where: {
+        year: SEED_SEASON_YEAR,
+        classification: { slug, sport: { slug: "football" } },
+      },
+    });
 
-      for (const mappingError of mappingErrors) {
-        errors.push(`Week ${week}, ${mappingError}`);
-      }
+    if (!season) {
+      const message = `${label}: no ${SEED_SEASON_YEAR} season row`;
+      errors.push(message);
+      console.warn(`  ${message}`);
+      continue;
+    }
 
-      for (const mapped of mappedGames) {
-        await prisma.game.upsert({
-          where: {
-            seasonId_externalId: {
+    console.log(`${label} / ${SEED_SEASON_YEAR} season`);
+    let synced = 0;
+
+    for (const week of SEED_WEEKS) {
+      try {
+        const { games: mappedGames, errors: mappingErrors } = await fetchScoreboard(
+          slug,
+          {
+            season: SEED_SEASON_YEAR,
+            week,
+          },
+        );
+
+        for (const mappingError of mappingErrors) {
+          errors.push(`${label} week ${week}, ${mappingError}`);
+        }
+
+        for (const mapped of mappedGames) {
+          const fields = {
+            week: mapped.week,
+            homeTeam: mapped.homeTeam,
+            awayTeam: mapped.awayTeam,
+            homeTeamAbbr: mapped.homeTeamAbbr,
+            awayTeamAbbr: mapped.awayTeamAbbr,
+            homeTeamLogo: mapped.homeTeamLogo,
+            awayTeamLogo: mapped.awayTeamLogo,
+            homeGroup: mapped.homeGroup,
+            awayGroup: mapped.awayGroup,
+            startTime: mapped.startTime,
+            status: mapped.status,
+            homeScore: mapped.homeScore,
+            awayScore: mapped.awayScore,
+            winner: mapped.winner,
+          };
+
+          await prisma.game.upsert({
+            where: {
+              seasonId_externalId: {
+                seasonId: season.id,
+                externalId: mapped.externalId,
+              },
+            },
+            create: {
               seasonId: season.id,
               externalId: mapped.externalId,
+              ...fields,
             },
-          },
-          create: {
-            seasonId: season.id,
-            externalId: mapped.externalId,
-            week: mapped.week,
-            homeTeam: mapped.homeTeam,
-            awayTeam: mapped.awayTeam,
-            homeTeamAbbr: mapped.homeTeamAbbr,
-            awayTeamAbbr: mapped.awayTeamAbbr,
-            homeTeamLogo: mapped.homeTeamLogo,
-            awayTeamLogo: mapped.awayTeamLogo,
-            startTime: mapped.startTime,
-            status: mapped.status,
-            homeScore: mapped.homeScore,
-            awayScore: mapped.awayScore,
-            winner: mapped.winner,
-          },
-          update: {
-            week: mapped.week,
-            homeTeam: mapped.homeTeam,
-            awayTeam: mapped.awayTeam,
-            homeTeamAbbr: mapped.homeTeamAbbr,
-            awayTeamAbbr: mapped.awayTeamAbbr,
-            homeTeamLogo: mapped.homeTeamLogo,
-            awayTeamLogo: mapped.awayTeamLogo,
-            startTime: mapped.startTime,
-            status: mapped.status,
-            homeScore: mapped.homeScore,
-            awayScore: mapped.awayScore,
-            winner: mapped.winner,
-            updatedAt: new Date(),
-          },
-        });
-        synced += 1;
-      }
+            update: {
+              ...fields,
+              updatedAt: new Date(),
+            },
+          });
+          synced += 1;
+        }
 
-      console.log(`  Week ${week}: ${mappedGames.length} games`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      errors.push(`Week ${week}: ${message}`);
-      console.warn(`  Week ${week} sync failed: ${message}`);
+        console.log(`  Week ${week}: ${mappedGames.length} games`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        errors.push(`${label} week ${week}: ${message}`);
+        console.warn(`  Week ${week} sync failed: ${message}`);
+      }
     }
+
+    console.log(`  Seeded ${synced} ${label} games for weeks ${SEED_WEEKS.join(", ")}`);
+    totalSynced += synced;
   }
 
-  console.log(`Seeded ${synced} games for weeks ${SEED_WEEKS.join(", ")}`);
+  console.log(
+    `Seeded ${totalSynced} games across ${SEED_CLASSIFICATIONS.length} classifications`,
+  );
   if (errors.length > 0) {
     console.warn(`Seed sync errors: ${errors.join("; ")}`);
   }
