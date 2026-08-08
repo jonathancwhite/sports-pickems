@@ -46,16 +46,27 @@ export {
 
 export {
   computeWinner,
-  ESPN_FBS_GROUP_ID,
-  fetchFbsRegularSeasonWeeks,
-  fetchFbsScoreboard,
+  ESPN_REGULAR_SEASON_TYPE,
+  fetchRegularSeasonWeeks,
+  fetchScoreboard,
   getEspnEventMappingError,
   mapEspnEventToGame,
   mapEspnScoreboardToGames,
   mapEspnStatus,
+  type FetchScoreboardParams,
   type MappedGame,
   type MapEspnScoreboardResult,
-} from "./sports/espn/cfb-fbs.js";
+} from "./sports/espn/scoreboard.js";
+
+export {
+  CFB_FBS_LEAGUE_CONFIG,
+  ESPN_FBS_GROUP_ID,
+  getLeagueConfig,
+  LEAGUE_CONFIGS,
+  requireLeagueConfig,
+  syncableClassificationSlugs,
+  type LeagueConfig,
+} from "./sports/espn/leagues.js";
 
 export { EspnApiError } from "./sports/espn/client.js";
 

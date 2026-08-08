@@ -1,9 +1,13 @@
-import { espnFetch, type EspnFetchOptions } from "./client.js";
-import { conferenceSlugFromEspnId } from "./conferences.js";
-import type { EspnEvent, EspnScoreboard } from "./types.js";
+/**
+ * ESPN scoreboard mapping, shared across every league we sync.
+ *
+ * Nothing here is league-specific: the parts that differ (path, query params,
+ * week fallback, group resolution) come in as a `LeagueConfig`.
+ */
 
-/** ESPN group ID for NCAA FBS */
-export const ESPN_FBS_GROUP_ID = 80;
+import { espnFetch, type EspnFetchOptions } from "./client.js";
+import { requireLeagueConfig, type LeagueConfig } from "./leagues.js";
+import type { EspnEvent, EspnScoreboard } from "./types.js";
 
 /** ESPN season type: 2 = regular season */
 export const ESPN_REGULAR_SEASON_TYPE = 2;
@@ -22,8 +26,8 @@ export interface MappedGame {
   homeTeamLogo: string | null;
   awayTeamLogo: string | null;
   /**
-   * Group slug for the team — an FBS conference here. Null when the team has
-   * no group in this classification (e.g. an FCS opponent).
+   * Group slug for the team — an FBS conference or an NFL division, depending
+   * on the league. Null when the team has no group in this league.
    */
   homeGroup: string | null;
   awayGroup: string | null;
@@ -90,7 +94,11 @@ function parseScore(score: string | undefined, status: GameStatus): number | nul
   return parsed;
 }
 
-export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame | null {
+export function mapEspnEventToGame(
+  event: EspnEvent,
+  week: number,
+  config: LeagueConfig,
+): MappedGame | null {
   const mappingError = getEspnEventMappingError(event);
   if (mappingError) {
     return null;
@@ -116,8 +124,8 @@ export function mapEspnEventToGame(event: EspnEvent, week: number): MappedGame |
     awayTeamAbbr: away.team.abbreviation ?? null,
     homeTeamLogo: home.team.logo ?? null,
     awayTeamLogo: away.team.logo ?? null,
-    homeGroup: conferenceSlugFromEspnId(home.team.conferenceId),
-    awayGroup: conferenceSlugFromEspnId(away.team.conferenceId),
+    homeGroup: config.groupForTeam(home.team),
+    awayGroup: config.groupForTeam(away.team),
     startTime: new Date(competition.date ?? event.date),
     week,
     status,
@@ -150,12 +158,13 @@ export interface MapEspnScoreboardResult {
 export function mapEspnScoreboardToGames(
   scoreboard: EspnScoreboard,
   week: number,
+  config: LeagueConfig,
 ): MapEspnScoreboardResult {
   const games: MappedGame[] = [];
   const errors: string[] = [];
 
   for (const event of scoreboard.events) {
-    const mapped = mapEspnEventToGame(event, week);
+    const mapped = mapEspnEventToGame(event, week, config);
     if (mapped) {
       games.push(mapped);
       continue;
@@ -168,20 +177,23 @@ export function mapEspnScoreboardToGames(
   return { games, errors };
 }
 
-export interface FetchFbsScoreboardParams {
+export interface FetchScoreboardParams {
   season: number;
   week: number;
   seasonType?: number;
 }
 
-export async function fetchFbsScoreboard(
-  params: FetchFbsScoreboardParams,
+export async function fetchScoreboard(
+  classificationSlug: string,
+  params: FetchScoreboardParams,
   options: EspnFetchOptions = {},
 ): Promise<MapEspnScoreboardResult> {
+  const config = requireLeagueConfig(classificationSlug);
+
   const scoreboard = await espnFetch<EspnScoreboard>(
-    "/sports/football/college-football/scoreboard",
+    config.path,
     {
-      groups: ESPN_FBS_GROUP_ID,
+      ...config.extraParams,
       year: params.season,
       week: params.week,
       seasontype: params.seasonType ?? ESPN_REGULAR_SEASON_TYPE,
@@ -190,17 +202,20 @@ export async function fetchFbsScoreboard(
     options,
   );
 
-  return mapEspnScoreboardToGames(scoreboard, params.week);
+  return mapEspnScoreboardToGames(scoreboard, params.week, config);
 }
 
 /**
  * Returns week numbers that have scheduled games for a season.
  * Uses the ESPN calendar embedded in a week-1 scoreboard response.
  */
-export async function fetchFbsRegularSeasonWeeks(
+export async function fetchRegularSeasonWeeks(
+  classificationSlug: string,
   season: number,
   options: EspnFetchOptions = {},
 ): Promise<number[]> {
+  const config = requireLeagueConfig(classificationSlug);
+
   const scoreboard = await espnFetch<
     EspnScoreboard & {
       leagues?: Array<{
@@ -208,9 +223,9 @@ export async function fetchFbsRegularSeasonWeeks(
       }>;
     }
   >(
-    "/sports/football/college-football/scoreboard",
+    config.path,
     {
-      groups: ESPN_FBS_GROUP_ID,
+      ...config.extraParams,
       year: season,
       week: 1,
       seasontype: ESPN_REGULAR_SEASON_TYPE,
@@ -228,6 +243,6 @@ export async function fetchFbsRegularSeasonWeeks(
     return weeks.filter((w) => !Number.isNaN(w));
   }
 
-  // Fallback: standard 15-week regular season
-  return Array.from({ length: 15 }, (_, i) => i + 1);
+  // Fallback: this league's standard regular-season length.
+  return Array.from({ length: config.regularSeasonWeekFallback }, (_, i) => i + 1);
 }

@@ -1,7 +1,7 @@
 # Split the ESPN adapter into shared mapping + LeagueConfig
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 01
 
 ## Question

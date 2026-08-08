@@ -6,8 +6,8 @@ import type {
   SyncGamesResponse,
 } from "@callsheet/shared";
 import {
-  fetchFbsRegularSeasonWeeks,
-  fetchFbsScoreboard,
+  fetchRegularSeasonWeeks,
+  fetchScoreboard,
   type MappedGame,
 } from "@callsheet/shared";
 import { lockSlatesForGame } from "./slates.js";
@@ -260,7 +260,7 @@ async function runSyncGames(input: SyncGamesRequest): Promise<SyncGamesResponse>
 
   const weeks = input.week
     ? [input.week]
-    : await fetchFbsRegularSeasonWeeks(seasonYear);
+    : await fetchRegularSeasonWeeks(classification.slug, seasonYear);
 
   let synced = 0;
   let updated = 0;
@@ -268,10 +268,10 @@ async function runSyncGames(input: SyncGamesRequest): Promise<SyncGamesResponse>
 
   for (const week of weeks) {
     try {
-      const { games: mappedGames, errors: mappingErrors } = await fetchFbsScoreboard({
-        season: seasonYear,
-        week,
-      });
+      const { games: mappedGames, errors: mappingErrors } = await fetchScoreboard(
+        classification.slug,
+        { season: seasonYear, week },
+      );
 
       for (const mappingError of mappingErrors) {
         errors.push(`Week ${week}, ${mappingError}`);

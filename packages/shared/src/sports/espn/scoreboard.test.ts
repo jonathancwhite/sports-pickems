@@ -4,7 +4,8 @@ import {
   mapEspnEventToGame,
   mapEspnScoreboardToGames,
   mapEspnStatus,
-} from "./cfb-fbs.js";
+} from "./scoreboard.js";
+import { CFB_FBS_LEAGUE_CONFIG } from "./leagues.js";
 import {
   finalGameEvent,
   inProgressGameEvent,
@@ -47,7 +48,11 @@ describe("computeWinner", () => {
 
 describe("mapEspnEventToGame", () => {
   it("maps scheduled game fields", () => {
-    const game = mapEspnEventToGame(mockEspnScoreboard.events[0]!, 1);
+    const game = mapEspnEventToGame(
+      mockEspnScoreboard.events[0]!,
+      1,
+      CFB_FBS_LEAGUE_CONFIG,
+    );
 
     expect(game).toEqual({
       externalId: "401856766",
@@ -69,7 +74,7 @@ describe("mapEspnEventToGame", () => {
   });
 
   it("maps final game with scores and tie winner", () => {
-    const game = mapEspnEventToGame(finalGameEvent, 2);
+    const game = mapEspnEventToGame(finalGameEvent, 2, CFB_FBS_LEAGUE_CONFIG);
 
     expect(game?.status).toBe("final");
     expect(game?.homeScore).toBe(28);
@@ -78,7 +83,7 @@ describe("mapEspnEventToGame", () => {
   });
 
   it("maps in-progress game with live scores", () => {
-    const game = mapEspnEventToGame(inProgressGameEvent, 3);
+    const game = mapEspnEventToGame(inProgressGameEvent, 3, CFB_FBS_LEAGUE_CONFIG);
 
     expect(game?.status).toBe("in_progress");
     expect(game?.homeScore).toBe(14);
@@ -89,7 +94,11 @@ describe("mapEspnEventToGame", () => {
 
 describe("mapEspnScoreboardToGames", () => {
   it("maps all events from a scoreboard", () => {
-    const result = mapEspnScoreboardToGames(mockEspnScoreboard, 1);
+    const result = mapEspnScoreboardToGames(
+      mockEspnScoreboard,
+      1,
+      CFB_FBS_LEAGUE_CONFIG,
+    );
     expect(result.games).toHaveLength(2);
     expect(result.errors).toHaveLength(0);
     expect(result.games[0]?.externalId).toBe("401856766");
@@ -111,6 +120,7 @@ describe("mapEspnScoreboardToGames", () => {
         ],
       },
       1,
+      CFB_FBS_LEAGUE_CONFIG,
     );
 
     expect(result.games).toHaveLength(2);
