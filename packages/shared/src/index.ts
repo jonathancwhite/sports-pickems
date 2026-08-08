@@ -63,6 +63,7 @@ export {
   ESPN_FBS_GROUP_ID,
   getLeagueConfig,
   LEAGUE_CONFIGS,
+  NFL_LEAGUE_CONFIG,
   requireLeagueConfig,
   syncableClassificationSlugs,
   type LeagueConfig,
@@ -81,6 +82,22 @@ export {
   type Conference,
   type ConferenceSlug,
 } from "./sports/espn/conferences.js";
+
+export {
+  NFL_DIVISIONS,
+  NFL_DIVISION_SLUGS,
+  NFL_TEAM_DIVISIONS,
+  getNflDivisionBySlug,
+  isNflDivisionSlug,
+  nflConferenceFromDivisionSlug,
+  nflDivisionShortName,
+  nflDivisionSlugFromTeamId,
+  nflGroupForTeam,
+  type NflConference,
+  type NflDivision,
+  type NflDivisionSlug,
+  type NflTeamDivision,
+} from "./sports/espn/nfl-groups.js";
 
 export {
   MIN_SLATE_GAMES,

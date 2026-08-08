@@ -37,7 +37,8 @@ NFL live in Callsheet at full parity with NCAA FBS — synced, pickable, scored,
 - The NFL scoreboard returns **no `conferenceId`** on `competitors[].team` — team keys are `id, uid, location, name, abbreviation, displayName, shortDisplayName, color, alternateColor, isActive, venue, links, logo`. This is why Q10 is a static table rather than a payload read. Site-v2 `/teams` and `/standings` don't carry it either; only the core API's group ref-walk does.
 - NFL regular season is **18 weeks** (`leagues[0].calendar` entry `value: "2"`). `fetchFbsRegularSeasonWeeks`'s hardcoded 15-week fallback is wrong for NFL.
 - NFL team **logos are present**, so `team-logo.tsx` and the redesigned pick cards work unchanged.
-- NFL scoreboard path: `/sports/football/nfl/scoreboard`, same `year` / `week` / `seasontype` / `limit` params as college football, minus `groups`.
+- NFL scoreboard path: `/sports/football/nfl/scoreboard`, same `week` / `seasontype` / `limit` params as college football, minus `groups`.
+- ⚠️ **`year` is accepted but inert** — ESPN returns the current season whatever you pass, for both leagues; `dates` is the parameter that selects a season. Discovered while resolving ticket 03 and re-verified independently. Live numbers reported by tickets 02 and 03 were therefore the 2026 slate, not the season they named. Ticketed as [ESPN ignores the year param](issues/10-espn-year-param-ignored.md); it does **not** block the NFL route, since the app syncs the current season.
 
 ## Decisions so far
 
@@ -45,6 +46,7 @@ NFL live in Callsheet at full parity with NCAA FBS — synced, pickable, scored,
 
 - [Rename the conference concept to group](issues/01-rename-conference-to-group.md) — done in `473d8ff`; `Game.homeGroup`/`awayGroup` and `?group=` replace the conference naming end to end, 902 existing rows preserved through the rename. `slates.ts` also carried the fields and was folded in; the FBS-specific tables and the `ConferenceFilter` component are untouched, left for 06 and 07.
 - [Split the ESPN adapter into shared mapping + LeagueConfig](issues/02-split-espn-adapter.md) — done in `c865912`; `scoreboard.ts` holds the shared mapping, `leagues.ts` holds `LEAGUE_CONFIGS` keyed by classification slug, and `fetchScoreboard`/`fetchRegularSeasonWeeks` take that slug. Verified live against ESPN. The FBS-only guard in `games.ts` is deliberately still in place — 04 removes it.
+- [NFL LeagueConfig and division tables](issues/03-nfl-config-and-division-tables.md) — done in `baff0dd`; `nfl-groups.ts` holds the 32-team → division table keyed on ESPN team id with conference derived from the slug, and `NFL_LEAGUE_CONFIG` joins `LEAGUE_CONFIGS`. Ids fetched from ESPN and cross-checked both ways; Q10's no-`conferenceId` premise re-confirmed live and now asserted in a test. Live: 18 weeks, 16 games, 0 errors, every side grouped. Found that ESPN ignores the `year` param for **both** leagues — `dates` is the working one — which is pre-existing and left for its own ticket.
 
 ## Not yet specified
 

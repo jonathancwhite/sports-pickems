@@ -9,6 +9,7 @@
  */
 
 import { conferenceSlugFromEspnId } from "./conferences.js";
+import { nflGroupForTeam } from "./nfl-groups.js";
 import type { EspnTeam } from "./types.js";
 
 export interface LeagueConfig {
@@ -43,9 +44,22 @@ export const CFB_FBS_LEAGUE_CONFIG: LeagueConfig = {
   groupForTeam: (team) => conferenceSlugFromEspnId(team.conferenceId),
 };
 
+/**
+ * The NFL takes no `groups` param — its scoreboard is the whole league — and
+ * its group comes from a static team → division table rather than the payload,
+ * because the scoreboard carries no `conferenceId` (see `nfl-groups.ts`).
+ */
+export const NFL_LEAGUE_CONFIG: LeagueConfig = {
+  classificationSlug: "nfl",
+  path: "/sports/football/nfl/scoreboard",
+  regularSeasonWeekFallback: 18,
+  groupForTeam: nflGroupForTeam,
+};
+
 /** Every league we can sync, keyed by classification slug. */
 export const LEAGUE_CONFIGS: Record<string, LeagueConfig> = {
   [CFB_FBS_LEAGUE_CONFIG.classificationSlug]: CFB_FBS_LEAGUE_CONFIG,
+  [NFL_LEAGUE_CONFIG.classificationSlug]: NFL_LEAGUE_CONFIG,
 };
 
 /** Slugs of classifications that game sync knows how to fetch. */
