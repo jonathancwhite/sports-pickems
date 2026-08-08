@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/clerk-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const THEME_STORAGE_KEY = "callsheet-theme";
 
@@ -24,6 +24,24 @@ export function getStoredTheme(): Theme {
 
 export function setStoredTheme(theme: Theme) {
   localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
+/**
+ * The light/dark theme actually on screen. `"system"` is no longer offered by
+ * the toggle, but accounts saved before that still have it stored, so it has to
+ * resolve against the OS preference — and follow it if the OS flips.
+ */
+export function useResolvedTheme(theme: Theme): "light" | "dark" {
+  const [systemTheme, setSystemTheme] = useState(getSystemTheme);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => setSystemTheme(media.matches ? "dark" : "light");
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return theme === "system" ? systemTheme : theme;
 }
 
 export function ThemeProvider({ theme }: { theme?: Theme }) {
