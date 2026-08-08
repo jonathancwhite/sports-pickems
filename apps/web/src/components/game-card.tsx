@@ -80,7 +80,7 @@ export function GameCard({
           name={game.awayTeam}
           abbr={game.awayTeamAbbr}
           logo={game.awayTeamLogo}
-          conference={game.awayConference}
+          group={game.awayGroup}
           isHome={false}
           selected={effectiveSelectedTeam === "away"}
           isWinner={game.status === "final" && game.winner === "away"}
@@ -93,7 +93,7 @@ export function GameCard({
           name={game.homeTeam}
           abbr={game.homeTeamAbbr}
           logo={game.homeTeamLogo}
-          conference={game.homeConference}
+          group={game.homeGroup}
           isHome
           selected={effectiveSelectedTeam === "home"}
           isWinner={game.status === "final" && game.winner === "home"}

@@ -33,7 +33,7 @@ function CommissionerSchedulePage() {
   const { data: slates } = useSlates(leagueId);
   const [selectedWeek, setSelectedWeek] = useSelectedWeek(slates);
   const [selectedGameIds, setSelectedGameIds] = useState<Set<string>>(new Set());
-  const [conference, setConference] = useState<ConferenceSlug | null>(
+  const [group, setGroup] = useState<ConferenceSlug | null>(
     DEFAULT_CONFERENCE_SLUG,
   );
 
@@ -75,14 +75,14 @@ function CommissionerSchedulePage() {
   const allGames = useMemo(() => weekGames?.games ?? [], [weekGames]);
 
   /**
-   * Counts every game once per conference represented on the field, so a
-   * cross-conference matchup contributes to both chips.
+   * Counts every game once per group represented on the field, so a
+   * cross-group matchup contributes to both chips.
    */
-  const conferenceCounts = useMemo(() => {
+  const groupCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const game of allGames) {
       const sides = new Set(
-        [game.homeConference, game.awayConference].filter(
+        [game.homeGroup, game.awayGroup].filter(
           (slug): slug is string => slug !== null,
         ),
       );
@@ -94,22 +94,22 @@ function CommissionerSchedulePage() {
   }, [allGames]);
 
   const visibleGames = useMemo(() => {
-    if (!conference) {
+    if (!group) {
       return allGames;
     }
     return allGames.filter(
       (game) =>
-        game.homeConference === conference || game.awayConference === conference,
+        game.homeGroup === group || game.awayGroup === group,
     );
-  }, [allGames, conference]);
+  }, [allGames, group]);
 
   /**
    * Slates are week-wide, so a commissioner can have games selected that the
-   * active conference filter hides. Surface that rather than let the count in
+   * active group filter hides. Surface that rather than let the count in
    * the summary bar look wrong.
    */
   const hiddenSelectedCount = useMemo(() => {
-    if (!conference) {
+    if (!group) {
       return 0;
     }
     const visibleIds = new Set(visibleGames.map((game) => game.id));
@@ -120,7 +120,7 @@ function CommissionerSchedulePage() {
       }
     }
     return hidden;
-  }, [conference, visibleGames, selectedGameIds]);
+  }, [group, visibleGames, selectedGameIds]);
 
   if (leaguePending) {
     return <LoadingSpinner label="Loading schedule…" />;
@@ -209,9 +209,9 @@ function CommissionerSchedulePage() {
       <div id="week-panel" role="tabpanel" aria-labelledby={`week-tab-${selectedWeek}`}>
         <ConferenceFilter
           className="mt-6"
-          selected={conference}
-          onChange={setConference}
-          counts={conferenceCounts}
+          selected={group}
+          onChange={setGroup}
+          counts={groupCounts}
           totalCount={allGames.length}
         />
 
@@ -229,7 +229,7 @@ function CommissionerSchedulePage() {
             <p className="text-xs text-muted-foreground">
               {hiddenSelectedCount} selected{" "}
               {hiddenSelectedCount === 1 ? "game is" : "games are"} outside the{" "}
-              {conferenceShortName(conference)} filter
+              {conferenceShortName(group)} filter
             </p>
           )}
           {isLocked && (
@@ -259,11 +259,11 @@ function CommissionerSchedulePage() {
         ) : visibleGames.length === 0 ? (
           <div className="mt-4 space-y-3 rounded-lg border border-dashed px-4 py-8 text-center">
             <p className="text-sm text-muted-foreground">
-              No {conferenceShortName(conference)} games in Week {selectedWeek}.
+              No {conferenceShortName(group)} games in Week {selectedWeek}.
             </p>
             <button
               type="button"
-              onClick={() => setConference(null)}
+              onClick={() => setGroup(null)}
               className="text-sm text-primary hover:underline"
             >
               Show all {allGames.length} games

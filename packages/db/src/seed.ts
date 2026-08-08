@@ -1,6 +1,7 @@
-import { fetchFbsScoreboard } from "@callsheet/shared";
+import { fetchScoreboard } from "@callsheet/shared";
 import { prisma } from "./client.js";
 
+const FBS_CLASSIFICATION_SLUG = "ncaa-fbs";
 const SEED_SEASON_YEAR = 2026;
 const SEED_WEEKS = [1, 2, 3];
 
@@ -54,10 +55,13 @@ export async function seed() {
 
   for (const week of SEED_WEEKS) {
     try {
-      const { games: mappedGames, errors: mappingErrors } = await fetchFbsScoreboard({
-        season: SEED_SEASON_YEAR,
-        week,
-      });
+      const { games: mappedGames, errors: mappingErrors } = await fetchScoreboard(
+        FBS_CLASSIFICATION_SLUG,
+        {
+          season: SEED_SEASON_YEAR,
+          week,
+        },
+      );
 
       for (const mappingError of mappingErrors) {
         errors.push(`Week ${week}, ${mappingError}`);

@@ -95,13 +95,13 @@ export function useGames(
   seasonId: string | undefined,
   week: number,
   classificationId?: string,
-  conference?: string,
+  group?: string,
 ) {
   const api = useApiClient();
 
   return useQuery({
-    queryKey: ["games", seasonId, week, classificationId, conference],
-    queryFn: () => api.getGames(seasonId!, week, classificationId, conference),
+    queryKey: ["games", seasonId, week, classificationId, group],
+    queryFn: () => api.getGames(seasonId!, week, classificationId, group),
     enabled: Boolean(seasonId) && week > 0,
   });
 }
