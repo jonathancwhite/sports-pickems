@@ -43,6 +43,8 @@ NFL live in Callsheet at full parity with NCAA FBS — synced, pickable, scored,
 
 <!-- one line per closed ticket -->
 
+- [Rename the conference concept to group](issues/01-rename-conference-to-group.md) — done in `473d8ff`; `Game.homeGroup`/`awayGroup` and `?group=` replace the conference naming end to end, 902 existing rows preserved through the rename. `slates.ts` also carried the fields and was folded in; the FBS-specific tables and the `ConferenceFilter` component are untouched, left for 06 and 07.
+
 ## Not yet specified
 
 - **Pick-lock timing under NFL's Thu/Sun/Mon spread.** Week-level locking fires on the week's first kickoff. CFB slates cluster on Saturday; an NFL week opens Thursday night and runs to Monday, so a Thursday kickoff locks the whole Sunday slate. The existing mechanism carries over unchanged, but whether it *feels* right is best judged once real NFL games are synced and visible — revisit after **Sync loop across active classifications**.
