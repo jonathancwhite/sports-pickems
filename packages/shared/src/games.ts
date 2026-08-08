@@ -32,8 +32,8 @@ export const gameSchema = z.object({
   awayTeamAbbr: z.string().nullable(),
   homeTeamLogo: z.string().nullable(),
   awayTeamLogo: z.string().nullable(),
-  homeConference: z.string().nullable(),
-  awayConference: z.string().nullable(),
+  homeGroup: z.string().nullable(),
+  awayGroup: z.string().nullable(),
   startTime: z.string().datetime(),
   week: z.number().int(),
   status: gameStatusSchema,
@@ -49,10 +49,11 @@ export const gamesQuerySchema = z.object({
   week: z.coerce.number().int().min(1).max(20),
   classificationId: z.string().uuid().optional(),
   /**
-   * Conference slug. Matches games where EITHER team is in the conference, so
-   * a cross-conference matchup appears under both sides.
+   * Group slug — an FBS conference or an NFL division, depending on the
+   * season's classification. Matches games where EITHER team is in the group,
+   * so a cross-group matchup appears under both sides.
    */
-  conference: z.enum(CONFERENCE_SLUGS).optional(),
+  group: z.enum(CONFERENCE_SLUGS).optional(),
 });
 
 export type GamesQuery = z.infer<typeof gamesQuerySchema>;

@@ -123,8 +123,8 @@ function toApiGame(game: {
   awayTeamAbbr: string | null;
   homeTeamLogo: string | null;
   awayTeamLogo: string | null;
-  homeConference: string | null;
-  awayConference: string | null;
+  homeGroup: string | null;
+  awayGroup: string | null;
   startTime: Date;
   week: number;
   status: string;
@@ -140,8 +140,8 @@ function toApiGame(game: {
     awayTeamAbbr: game.awayTeamAbbr,
     homeTeamLogo: game.homeTeamLogo,
     awayTeamLogo: game.awayTeamLogo,
-    homeConference: game.homeConference,
-    awayConference: game.awayConference,
+    homeGroup: game.homeGroup,
+    awayGroup: game.awayGroup,
     startTime: game.startTime.toISOString(),
     week: game.week,
     status: game.status as Game["status"],
@@ -182,8 +182,8 @@ async function upsertMappedGame(
       awayTeamAbbr: mapped.awayTeamAbbr,
       homeTeamLogo: mapped.homeTeamLogo,
       awayTeamLogo: mapped.awayTeamLogo,
-      homeConference: mapped.homeConference,
-      awayConference: mapped.awayConference,
+      homeGroup: mapped.homeGroup,
+      awayGroup: mapped.awayGroup,
       startTime: mapped.startTime,
       status: mapped.status,
       homeScore: mapped.homeScore,
@@ -198,8 +198,8 @@ async function upsertMappedGame(
       awayTeamAbbr: mapped.awayTeamAbbr,
       homeTeamLogo: mapped.homeTeamLogo,
       awayTeamLogo: mapped.awayTeamLogo,
-      homeConference: mapped.homeConference,
-      awayConference: mapped.awayConference,
+      homeGroup: mapped.homeGroup,
+      awayGroup: mapped.awayGroup,
       startTime: mapped.startTime,
       status: mapped.status,
       homeScore: mapped.homeScore,
@@ -327,17 +327,14 @@ export async function listGames(query: GamesQuery): Promise<{ games: Game[] }> {
     where: {
       seasonId: query.seasonId,
       week: query.week,
-      // Both clauses are OR groups, so they have to be combined under AND —
+      // Both clauses are OR blocks, so they have to be combined under AND —
       // a second top-level `OR` key would replace the retention filter.
       AND: [
         { OR: [{ status: { not: "final" } }, { startTime: { gte: cutoff } }] },
-        ...(query.conference
+        ...(query.group
           ? [
               {
-                OR: [
-                  { homeConference: query.conference },
-                  { awayConference: query.conference },
-                ],
+                OR: [{ homeGroup: query.group }, { awayGroup: query.group }],
               },
             ]
           : []),

@@ -6,7 +6,7 @@
  * ids that appear on `competitors[].team.conferenceId` in a scoreboard payload.
  *
  * `slug` is our own stable identifier: it is what the API accepts as a filter
- * and what is persisted on `Game.homeConference` / `Game.awayConference`, so it
+ * and what is persisted on `Game.homeGroup` / `Game.awayGroup`, so it
  * must not change once games have been synced. ESPN's display names do drift
  * (the AAC became "American Conference" in 2025) — that only affects `name`.
  */

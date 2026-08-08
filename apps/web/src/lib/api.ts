@@ -172,7 +172,7 @@ export function useApiClient() {
       seasonId: string,
       week: number,
       classificationId?: string,
-      conference?: string,
+      group?: string,
     ) => {
       const params = new URLSearchParams({
         seasonId,
@@ -181,8 +181,8 @@ export function useApiClient() {
       if (classificationId) {
         params.set("classificationId", classificationId);
       }
-      if (conference) {
-        params.set("conference", conference);
+      if (group) {
+        params.set("group", group);
       }
       return apiFetch<GamesResponse>(`/api/games?${params.toString()}`, getToken);
     },

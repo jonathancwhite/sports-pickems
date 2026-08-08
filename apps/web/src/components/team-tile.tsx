@@ -26,7 +26,7 @@ interface TeamTileProps {
   name: string;
   abbr: string | null;
   logo: string | null;
-  conference: string | null;
+  group: string | null;
   isHome: boolean;
   /** Renders as the picked team — accent border and tint. */
   selected?: boolean;
@@ -40,7 +40,7 @@ interface TeamTileProps {
 }
 
 /**
- * One side of a matchup: crest, team name, and a home/away + conference
+ * One side of a matchup: crest, team name, and a home/away + group
  * sub-line. Shared by the player-facing pick card and the commissioner's
  * slate builder so both read as the same component.
  */
@@ -48,7 +48,7 @@ export function TeamTile({
   name,
   abbr,
   logo,
-  conference,
+  group,
   isHome,
   selected = false,
   isWinner = false,
@@ -68,7 +68,7 @@ export function TeamTile({
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium leading-tight">{name}</span>
         <span className="mt-0.5 block truncate text-[10px] uppercase tracking-wide text-muted-foreground">
-          {isHome ? "Home" : "Away"} · {conferenceShortName(conference)}
+          {isHome ? "Home" : "Away"} · {conferenceShortName(group)}
         </span>
       </span>
       {trailing}

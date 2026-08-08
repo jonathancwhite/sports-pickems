@@ -182,11 +182,13 @@ model Game {
   // synced before logo tracking existed — re-sync backfills those.
   homeTeamLogo String?     @map("home_team_logo")
   awayTeamLogo String?     @map("away_team_logo")
-  // Conference slugs from @callsheet/shared FBS_CONFERENCES. Null for teams
-  // outside FBS (e.g. an FCS non-conference opponent) and for rows synced
-  // before conference tracking existed — re-sync backfills those.
-  homeConference String?   @map("home_conference")
-  awayConference String?   @map("away_conference")
+  // Group slug for the team, scoped to the season's classification: an FBS
+  // conference (`sec`) for college football, an NFL division (`afc-east`) for
+  // the NFL. Null when the team has no group in that classification (e.g. an
+  // FCS non-conference opponent) and for rows synced before group tracking
+  // existed — re-sync backfills those.
+  homeGroup    String?     @map("home_group")
+  awayGroup    String?     @map("away_group")
   startTime    DateTime    @map("start_time") @db.Timestamptz(6)
   status       GameStatus  @default(scheduled)
   homeScore    Int?        @map("home_score")
@@ -201,8 +203,8 @@ model Game {
 
   @@unique([seasonId, externalId], map: "games_season_external_id_idx")
   @@index([seasonId, week], map: "games_season_week_idx")
-  @@index([seasonId, week, homeConference], map: "games_season_week_home_conf_idx")
-  @@index([seasonId, week, awayConference], map: "games_season_week_away_conf_idx")
+  @@index([seasonId, week, homeGroup], map: "games_season_week_home_group_idx")
+  @@index([seasonId, week, awayGroup], map: "games_season_week_away_group_idx")
   @@index([startTime], map: "games_start_time_idx")
   @@index([status], map: "games_status_idx")
   @@map("games")

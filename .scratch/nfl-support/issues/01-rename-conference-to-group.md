@@ -1,7 +1,7 @@
 # Rename the conference concept to group
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question
