@@ -12,6 +12,7 @@ Sports pick'em platform — create leagues, invite friends, compete to predict g
 | [Deployment Runbook](docs/DEPLOYMENT.md) | Step-by-step production deploy guide |
 | [Sprint Plans](plans/README.md) | Build roadmap (13 sprints) |
 | [Smoke Test Checklist](docs/SMOKE_TEST.md) | Pre-launch verification steps |
+| [Clerk Webhooks Locally](docs/clerk-webhooks-local.html) | Receiving Clerk webhooks on localhost via cloudflared |
 
 ## Stack
 
@@ -77,6 +78,18 @@ pnpm dev
 - Web: http://localhost:5173
 - API: http://localhost:3001
 - Health: http://localhost:3001/api/health
+
+### 6. (Optional) Receive Clerk webhooks locally
+
+`localhost` isn't reachable from Clerk's servers. Run a Cloudflare quick tunnel
+alongside `pnpm dev` and point a Clerk **development** webhook endpoint at it:
+
+```bash
+cloudflared tunnel --url http://localhost:3001
+# → https://<random>.trycloudflare.com/api/webhooks/clerk
+```
+
+Full walkthrough: [docs/clerk-webhooks-local.html](docs/clerk-webhooks-local.html).
 
 ## Monorepo structure
 
