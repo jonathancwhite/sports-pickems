@@ -22,7 +22,7 @@ Tests: capture a real NFL scoreboard response into `__fixtures__` and assert the
 
 ## Answer
 
-Done on `feat/nfl-03-league-config` (branched off `feat/nfl-01-rename-group`), commit `SHA_PLACEHOLDER` — 5 files.
+Done on `feat/nfl-03-league-config` (branched off `feat/nfl-01-rename-group`), commit `baff0dd` — 5 files.
 
 - `espn/nfl-groups.ts` — `NFL_DIVISIONS` (8 rows: slug, name, shortName) and `NFL_TEAM_DIVISIONS` (32 rows: `espnId`, `name`, `division`), plus `nflDivisionSlugFromTeamId`, `nflGroupForTeam`, `nflConferenceFromDivisionSlug`, `isNflDivisionSlug`, `getNflDivisionBySlug`, `nflDivisionShortName`. Mirrors `conferences.ts` including the header comment explaining why the data is hand-maintained.
 - `NFL_LEAGUE_CONFIG` in `leagues.ts` — `classificationSlug: "nfl"`, `/sports/football/nfl/scoreboard`, no `extraParams`, `regularSeasonWeekFallback: 18`, `groupForTeam: nflGroupForTeam`. Registered in `LEAGUE_CONFIGS`, so `syncableClassificationSlugs()` now returns `["ncaa-fbs", "nfl"]`.
